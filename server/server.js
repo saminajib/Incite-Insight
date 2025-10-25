@@ -208,6 +208,7 @@ async function spendingAdvice(data) {
   }
 }
 
+//leaving this for now to test api requests on others
 const spendData = await spendingAdvice(spendingData);
 console.log(spendData);
 
@@ -245,8 +246,7 @@ async function investmentAdvice(data) {
   }
 }
 
-const investData = await investmentAdvice(spendingData);
-console.log(investData);
+
 
 
 async function comparison(month1, month2) {
@@ -281,5 +281,82 @@ try {
   }
 }
 
-const compData = await comparison(spendingData, spendingData2);
-console.log(compData);
+
+
+//Gemini endpoints
+app.post("/spending-advice", express.json(), async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data) {
+      return res.status(400).json({ error: 'No data provided' });
+    }
+
+    const advice = await spendingAdvice(data);
+    res.json({ advice });
+  } catch (err) {
+    console.error('Error generating spending advice:', err);
+    res.status(500).json({ error: 'Failed to generate spending advice' });
+  }
+});
+
+app.post("/investment-advice", express.json(),  async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data) {
+      return res.status(400).json({ error: 'No data provided' });
+    }
+
+    const advice = await investmentAdvice(data);
+    res.json({ advice });
+  } catch (err) {
+    console.error('Error generating investment advice:', err);
+    res.status(500).json({ error: 'Failed to generate investment advice' });
+  }
+});
+
+
+
+
+
+//getting monthly spending by category
+async function monthlySpendingByCategory(csvData) {
+  return new Promise((resolve, reject) => {
+    parse(csvData, { columns: true, trim: true }, (err, rows) => {
+      if (err) {
+        console.error("Error parsing CSV data:", err);
+        return reject(err); // Reject the promise on error
+      }
+
+      const result = {};
+
+      rows.forEach(row => {
+        const date = row.date;
+        const category = row.category;
+        const amount = parseFloat(row.amount);
+
+        if (!date || !category || isNaN(amount)) {
+          console.warn("Skipping invalid row:", row);
+          return; // Skip invalid rows
+        }
+
+        const month = date.slice(0, 7); // Extract YYYY-MM
+
+        if (!result[month]) {
+          result[month] = {};
+        }
+
+        if (!result[month][category]) {
+          result[month][category] = 0;
+        }
+
+        result[month][category] += amount;
+      });
+
+      resolve(result);
+    });
+  });
+}
+
+const data = await parseCSV(req.file.path);
+
+console.log("Monthly Spending by Category:", await monthlySpendingByCategory(data));
