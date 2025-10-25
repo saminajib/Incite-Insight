@@ -8,14 +8,15 @@ import path from "path";
 config({ path: path.resolve(process.cwd(), "server/.env") });
 
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+
 const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
 
 
-const ai = new GoogleGenAI({});
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
 
 const parseCSV = (filePath) => {
@@ -169,6 +170,19 @@ const spendingData = {
   }
 };
 
+const spendingData2 = {
+  income: 3000,
+  categories: {
+    rent: 1000,
+    dining_out: 400,
+    groceries: 300,
+    entertainment: 325,
+    transportation: 250,
+    shopping: 400,
+    other: 300
+  }
+};
+
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -198,7 +212,6 @@ async function spendingAdvice(data) {
 }
 
 spendingAdvice(spendingData);
-console.log('--------------------------------');
 
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
@@ -228,7 +241,33 @@ async function investmentAdvice(data) {
 }
 
 investmentAdvice(spendingData);
-console.log('--------------------------------');
 
 
-  
+async function comparison(month1, month2) {
+const response = await ai.models.generateContent({
+model: "gemini-2.5-flash",
+contents:
+"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+config: {
+responseMimeType: "application/json",
+responseSchema: {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      advice: {
+        type: Type.STRING,
+      },
+      estimate: {
+        type: Type.INTEGER,
+      },
+    },
+    propertyOrdering: ["advice", "estimate"],
+  },
+},
+}
+});
+console.log(response.text);
+}
+
+comparison(spendingData, spendingData2);
