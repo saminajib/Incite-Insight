@@ -2,7 +2,7 @@ import express from "express";
 import {parse} from "csv-parse";
 import multer from "multer";
 import fs from "fs";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { config } from "dotenv";
 import path from "path";
 config({ path: path.resolve(process.cwd(), "server/.env") });
@@ -29,15 +29,91 @@ const parseCSV = (filePath) => {
     });
 };
 
+const superCategoryMap = {
+  Restaurant: "Essentials",
+  Restuarant: "Essentials", // correcting your CSV typo
+  Market: "Essentials",
+  Coffe: "Essentials", // typo correction from Coffee
+  Coffee: "Essentials",
+  Health: "Essentials",
+  Clothing: "Essentials",
+  Communal: "Essentials",
+  Fuel: "Essentials",
+
+  Taxi: "Transport",
+  Transport: "Transport",
+  "Rent Car": "Transport",
+  
+  Sport: "Entertainment",
+  Events: "Entertainment",
+  "Film/enjoyment": "Entertainment",
+  Joy: "Entertainment",
+  Motel: "Entertainment",
+  Travel: "Entertainment",
+
+  "Business lunch": "Business & Learning",
+  Tech: "Business & Learning",
+  business_expenses: "Business & Learning",
+  Learning: "Business & Learning",
+  Phone: "Business & Learning",
+
+  Other: "Other"
+};
+
+const computeSuperCategoryCounts = (data) => {
+  const result = {};
+
+  data.forEach((row) => {
+    const category = row.category || "Other";
+    const superCat = superCategoryMap[category] || "Other";
+    const amount = parseFloat(row.amount) || 0;
+
+    if (!result[superCat]) {
+      result[superCat] = { count: 0, totalAmount: 0 };
+    }
+
+    result[superCat].count += 1;
+    result[superCat].totalAmount += amount;
+  });
+
+  return result;
+};
+
+const computeMonthlySpending = (data) => {
+  const now = new Date("9-25-2024");
+  const monthlyTotals = {};
+
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
+
+    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const amount = parseFloat(row.amount);
+    if (isNaN(amount)) return;
+
+    if (!monthlyTotals[yearMonth]) monthlyTotals[yearMonth] = 0;
+    monthlyTotals[yearMonth] += amount;
+  });
+
+  return monthlyTotals;
+};
+
+
+
 app.post("/upload", upload.single('file'), async (req, res) => {
     try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const data = await parseCSV(req.file.path);
+    
+    const insights = computeSuperCategoryCounts(data);
+    const monthlySpending = computeMonthlySpending(data);
 
     fs.unlink(req.file.path, () => {});
 
-    res.json({ message: 'File parsed successfully', data });
+    res.json({ message: 'File parsed successfully', data, insights, monthlySpending });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
@@ -76,60 +152,83 @@ export async function generateGeminiResponse({prompt, model = DEFAULT_MODEL, tem
   return normalizeText(resp);
 }
 
-//helper funciton, call in postroute to get explanation of provided data
-export async function explain({text, opts = {} } = {}) {
-  const prompt = 'Give detailed and concise explanations for the following text:\n"""\n' + text + '\n"""';
-  return await generateGeminiResponse({ prompt, ...opts})
-}
-
-export async function analyze({text, opts = {}} = {}) {
-  const prompt = 'Analyze the following data and proved financial and logical insights:\n"""\n' + text + '\n"""';
-  return await generateGeminiResponse({ prompt, ...opts})
-}
-
-export async function answerQuestion({text, opts = {}} = {}) {
-  const prompt = 'Answer the following question accurately and concisely:\n"""\n' + text + '\n"""';
-  return await generateGeminiResponse({ prompt, ...opts})
-}
-
-
-//postroute for explanation
-app.post("/explain", express.json(), async (req, res) => {
-    try {
-        const { text } = req.body;
-        if (!text) return res.status(400).json({ error: 'No text provided' });
-
-        const explanation = await explain({ text, opts: { temperature: 0.1, maxOutputTokens: 200} });
-        res.json({ explanation });
-    } catch (err) {
-        console.error('Error generating explanation:', err);
-        res.status(500).json({ error: 'Failed to generate explanation' });
-    }
-});
 
 
 
-// Test Gemini integration
-async function testGemini() {
-    const response = await ai.models.generateContent({
+// test prompt creation
+const spendingData = {
+  income: 4000,
+  categories: {
+    rent: 1500,
+    dining_out: 600,
+    groceries: 450,
+    entertainment: 300,
+    transportation: 250,
+    shopping: 400,
+    other: 200
+  }
+};
+
+async function spendingAdvice(data) {
+  const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: "Explain how AI works in a few words",
+    contents:
+      "Give some spending advice on the data above while being specific, send with one advice sentence that is detailed as well as one estimate on how much could be saved by the next month. User Spending Data: " + JSON.stringify(data),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            advice: {
+              type: Type.STRING,
+            },
+            estimate: {
+              type: Type.INTEGER,
+            },
+          },
+          propertyOrdering: ["advice", "estimate"],
+        },
+      },
+    },
+  });
+
+  console.log(response.text);
+}
+
+spendingAdvice(spendingData);
+console.log('--------------------------------');
+
+async function investmentAdvice(data) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents:
+      "Provide investment advice based on the transaction data provided, make it concise and return in a single sentence as well as an estimate on return in the next 6 months. User Spending Data: " + JSON.stringify(data),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            advice: {
+              type: Type.STRING,
+            },
+            estimate: {
+              type: Type.INTEGER,
+            },
+          },
+          propertyOrdering: ["advice", "estimate"],
+        },
+      },
+    }
   });
   console.log(response.text);
 }
 
+investmentAdvice(spendingData);
+console.log('--------------------------------');
 
 
-//test call on explain function
-const p = explain({ text: "explain common financial terms like ROI, EBITDA, and liquidity." });
-p.then(r => console.log("done:", r)).catch(console.error);
-
-// Run test
-(async () => {
-    try {
-      await testGemini();
-    } catch (err) {
-      console.error("Gemini test failed:", err);
-    }
-  })();
   
