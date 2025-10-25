@@ -231,12 +231,12 @@ async function investmentAdvice(data) {
   }
 }
 
-//comparison function between two months, not implemented in endpoints yet
-async function comparison(month1, month2) {
+//spending alert function that will find alarming spending habits
+async function alert(data) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
 contents:
-"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending going forward(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+"Analyze the data provided and give detailed yet concise(one sentence) insights on alarming spending habits. Give an estimated amount that could be saved if they fix these bad habits. User data: " + JSON.stringify(data),
 config: {
 responseMimeType: "application/json",
 responseSchema: {
@@ -257,6 +257,39 @@ responseSchema: {
 }
 });
 try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
+}
+
+async function forecasting(data) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents:
+      "Based on the data provided, forecast the user's financial situation for the next month. Keep it conicse in one sentence and provide an estimated amount of free cash they would have. User data: " + JSON.stringify(data),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            advice: {
+              type: Type.STRING,
+            },
+            estimate: {
+              type: Type.INTEGER,
+            },
+          },
+          propertyOrdering: ["advice", "estimate"],
+        },
+      },
+    }
+  });
+
+  try {
     const parsed = JSON.parse(response.text);
     return parsed;
   } catch (e) {
@@ -296,6 +329,12 @@ app.post("/investment-advice", express.json(),  async (req, res) => {
     res.status(500).json({ error: 'Failed to generate investment advice' });
   }
 });
+
+
+//probably gonna be the one endpoint
+app.post("/AIAPIrequest", express.json(), async (req, res) => {
+
+}
 
 
 //function that passes in the parsed csv data separated by month with supercategories and finds the specific month
@@ -353,7 +392,7 @@ async function monthlySpendingByCategory(csvData) {
 
 
 //testing previous two functions
-const testCSVPath = path.resolve(process.cwd(), "server/budget_data.csv");
+const testCSVPath = path.resolve(process.cwd(), "../server/budget_data.csv");
 const csvData = fs.readFileSync(testCSVPath, "utf-8");
 
 console.log("Monthly Spending by Category:", await monthlySpendingByCategory(csvData));
