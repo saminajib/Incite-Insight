@@ -145,34 +145,6 @@ app.listen(port, () => {
 
 
 
-// Normalize various response formats to a string
-function normalizeText(resp) {
-  if (!resp) return '';
-  if (typeof resp === 'string') return resp;
-  if (resp.text) return resp.text;
-
-  const output = resp.output?.[0]?.content;
-  if (Array.isArray(output)) {
-    const textBlock = output.find(block => block.type === 'text' && block.text);
-    if (textBlock) return textBlock.text ?? textBlock;
-  } 
-  try { return JSON.stringify(resp); } catch { return String(resp); }
-}
-
-//prompt function, takes input for prompt and model, gets response based on provided info
-export async function generateGeminiResponse({prompt, model = DEFAULT_MODEL, temperature = 0.2, maxOutputTokens = 512 } = {}) {
-  const contents = Array.isArray(prompt) ? prompt : [{ type: "text", text: String(prompt) }];
-  const resp = await ai.models.generateContent({
-    model,
-    contents,
-    temperature,
-    maxOutputTokens,
-  });
-  return normalizeText(resp);
-}
-
-
-
 
 // test prompt creation
 const spendingData = {
@@ -201,6 +173,8 @@ const spendingData2 = {
   }
 };
 
+
+//functions below all prompt the AI model, parse the response, and return it in JSON format
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -226,10 +200,17 @@ async function spendingAdvice(data) {
     },
   });
 
-  console.log(response.text);
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-spendingAdvice(spendingData);
+const spendData = await spendingAdvice(spendingData);
+console.log(spendData);
+
 
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
@@ -255,17 +236,24 @@ async function investmentAdvice(data) {
       },
     }
   });
-  console.log(response.text);
+
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-investmentAdvice(spendingData);
+const investData = await investmentAdvice(spendingData);
+console.log(investData);
 
 
 async function comparison(month1, month2) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
 contents:
-"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending going forward(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
 config: {
 responseMimeType: "application/json",
 responseSchema: {
@@ -285,7 +273,13 @@ responseSchema: {
 },
 }
 });
-console.log(response.text);
+try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-comparison(spendingData, spendingData2);
+const compData = await comparison(spendingData, spendingData2);
+console.log(compData);
