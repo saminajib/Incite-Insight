@@ -18,7 +18,6 @@ const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
 
-
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
 //const monthIncome

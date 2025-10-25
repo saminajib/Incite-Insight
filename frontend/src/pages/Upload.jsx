@@ -1,26 +1,34 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
 import { 
   Upload, 
-  File, 
+  DollarSign, 
+  FileSpreadsheet, 
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  Download,
-  FileSpreadsheet,
   Trash2,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Eye,
+  Loader2
 } from 'lucide-react';
 
-const CSVUploadPage = () => {
+const API_URL = 'localhost:3000/upload';
+
+const TransactionUploadPage = () => {
+  const [monthlyIncome, setMonthlyIncome] = useState('');
+  const [csvFile, setCsvFile] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const [transactionCount, setTransactionCount] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(null); // 'success', 'error', 'processing'
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -38,152 +46,257 @@ const CSVUploadPage = () => {
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+      handleFileValidation(e.dataTransfer.files[0]);
     }
   };
 
   const handleChange = (e) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+      handleFileValidation(e.target.files[0]);
     }
   };
 
-  const handleFile = (file) => {
-    // Check if file has .csv extension (more lenient than MIME type check)
-    if (file.name.toLowerCase().endsWith('.csv')) {
-      setUploadedFile(file);
-      processAndStoreFile(file);
-    } else {
-      setUploadStatus('error');
-      setTimeout(() => setUploadStatus(null), 3000);
-    }
-  };
-
-  const processAndStoreFile = async (file) => {
-    setUploadStatus('processing');
-    setUploadProgress(0);
+  const handleFileValidation = (file) => {
+    setError(null);
     
-    try {
-      // Create FormData to send the file
-      const formData = new FormData();
-      formData.append('csv', file);
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setError('Please upload a CSV file');
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size exceeds 10MB limit');
+      return;
+    }
+    
+    setCsvFile(file);
+    parseCSVPreview(file);
+  };
+
+  const parseCSVPreview = (file) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n').filter(line => line.trim());
       
-      // Simulate progress during upload
-      setUploadProgress(30);
-      
-      // Make API request
-      const response = await fetch('YOUR_API_ENDPOINT_HERE', {
-        method: 'POST',
-        body: formData,
-        // Add headers if needed
-        // headers: {
-        //   'Authorization': 'Bearer YOUR_TOKEN'
-        // }
-      });
-      
-      setUploadProgress(70);
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+      if (lines.length === 0) {
+        setError('CSV file is empty');
+        return;
       }
       
-      // Get JSON response
-      const jsonData = await response.json();
+      const headers = lines[0].split(',').map(h => h.trim());
+      const dataRows = lines.slice(1, Math.min(11, lines.length));
       
-      setUploadProgress(90);
+      const preview = dataRows.map(line => {
+        const values = line.split(',').map(v => v.trim());
+        return {
+          Date: values[0] || '',
+          Category: values[1] || '',
+          Amount: values[2] || ''
+        };
+      });
       
-      // Store JSON response in sessionStorage
-      sessionStorage.setItem('processedData', JSON.stringify(jsonData));
-      sessionStorage.setItem('csvFileName', file.name);
-      sessionStorage.setItem('uploadTime', new Date().toISOString());
-      
-      setUploadProgress(100);
-      setUploadStatus('success');
-      
-    } catch (error) {
-      console.error('Error processing file:', error);
-      setUploadStatus('error');
-      setTimeout(() => setUploadStatus(null), 3000);
-    }
+      setPreviewData(preview);
+      setTransactionCount(lines.length - 1);
+    };
+    
+    reader.onerror = () => {
+      setError('Failed to read CSV file');
+    };
+    
+    reader.readAsText(file);
   };
 
   const removeFile = () => {
-    setUploadedFile(null);
-    setUploadStatus(null);
-    setUploadProgress(0);
+    setCsvFile(null);
+    setPreviewData(null);
+    setTransactionCount(0);
+    setError(null);
+  };
+
+  const handleProcessData = async () => {
+    if (!monthlyIncome || parseFloat(monthlyIncome) <= 0) {
+      setError('Please enter your monthly income');
+      return;
+    }
     
-    // Clear sessionStorage
-    sessionStorage.removeItem('processedData');
-    sessionStorage.removeItem('csvFileName');
+    if (!csvFile) {
+      setError('Please upload a CSV file');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('csv', csvFile);
+      formData.append('monthlyIncome', monthlyIncome);
+      
+      setLoadingMessage('Uploading...');
+      
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData
+      });
+      
+      setLoadingMessage('Processing transactions...');
+      
+      if (!response.ok) {
+        throw new Error('Failed to process data. Please try again.');
+      }
+      
+      setLoadingMessage('Generating insights...');
+      
+      const jsonResponse = await response.json();
+      
+      sessionStorage.setItem('financialData', JSON.stringify(jsonResponse));
+      sessionStorage.setItem('monthlyIncome', monthlyIncome);
+      sessionStorage.setItem('transactionCount', transactionCount.toString());
+      sessionStorage.setItem('uploadTime', new Date().toISOString());
+      
+      setSuccess(true);
+      setIsLoading(false);
+      
+    } catch (err) {
+      setError(err.message || 'Failed to process data. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleUploadAgain = () => {
+    setMonthlyIncome('');
+    setCsvFile(null);
+    setPreviewData(null);
+    setTransactionCount(0);
+    setError(null);
+    setSuccess(false);
+    
+    sessionStorage.removeItem('financialData');
+    sessionStorage.removeItem('monthlyIncome');
+    sessionStorage.removeItem('transactionCount');
     sessionStorage.removeItem('uploadTime');
   };
 
-  const sampleData = [
-    { field: 'Date', example: '2025-10-24', required: true },
-    { field: 'Description', example: 'Whole Foods Market', required: true },
-    { field: 'Category', example: 'Food', required: true },
-    { field: 'Amount', example: '127.45', required: true },
-    { field: 'Payment Method', example: 'Credit Card', required: false }
-  ];
+  const handleGoToDashboard = () => {
+    window.location.href = '/dashboard';
+  };
+
+  const canProcess = monthlyIncome && parseFloat(monthlyIncome) > 0 && csvFile && !isLoading;
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Container */}
-      <div className="relative max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
+      <div className="relative max-w-5xl mx-auto px-4 py-8 space-y-6">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 backdrop-blur-sm">
             <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-slate-300">Import your financial data</span>
+            <span className="text-sm text-slate-300">Import your data</span>
           </div>
-          <h1 className="text-4xl font-bold text-slate-100">Upload CSV File</h1>
+          <h1 className="text-4xl font-bold text-slate-100">Upload Transactions</h1>
           <p className="text-slate-400 max-w-2xl mx-auto">
-            Upload your transaction data to get instant insights and visualization. 
-            We support standard CSV formats from most banking institutions.
+            Upload your transaction data and enter your monthly income to get personalized financial insights
           </p>
         </div>
 
-        {/* Status Alerts */}
-        {uploadStatus === 'success' && (
+        {error && (
+          <Alert className="border-red-500/50 bg-red-500/10 backdrop-blur-sm">
+            <XCircle className="h-4 w-4 text-red-400" />
+            <AlertDescription className="text-red-200">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
           <Alert className="border-emerald-500/50 bg-emerald-500/10 backdrop-blur-sm">
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             <AlertDescription className="text-emerald-200">
-              File uploaded successfully! Your data is ready to be processed.
+              Successfully processed {transactionCount} transactions! Your insights are ready.
             </AlertDescription>
           </Alert>
         )}
 
-        {uploadStatus === 'error' && (
-          <Alert className="border-red-500/50 bg-red-500/10 backdrop-blur-sm">
-            <XCircle className="h-4 w-4 text-red-400" />
-            <AlertDescription className="text-red-200">
-              Invalid file type. Please upload a CSV file.
-            </AlertDescription>
-          </Alert>
-        )}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-cyan-400" />
+                Monthly Income
+                <span className="text-red-400 text-sm">*</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Enter your total monthly income
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-slate-400 text-lg">$</span>
+                <Input
+                  type="number"
+                  placeholder="e.g., 5000"
+                  value={monthlyIncome}
+                  onChange={(e) => setMonthlyIncome(e.target.value)}
+                  disabled={success}
+                  className="pl-8 h-12 bg-slate-800/50 border-slate-700 text-white text-lg placeholder:text-slate-500 focus:border-cyan-500"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Upload Area */}
+          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-cyan-400" />
+                Required Format
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Your CSV must have these exact column names
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span className="text-slate-300 font-medium">Date</span>
+                  <span className="text-slate-500 text-xs">(e.g., 2025-10-24)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span className="text-slate-300 font-medium">Category</span>
+                  <span className="text-slate-500 text-xs">(e.g., Food)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span className="text-slate-300 font-medium">Amount</span>
+                  <span className="text-slate-500 text-xs">(e.g., 127.45)</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-4">
+                ⚠️ Column names must match exactly (case-sensitive)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-          <CardContent className="p-8">
-            <div
-              className={`relative border-2 border-dashed rounded-xl transition-all ${
-                dragActive 
-                  ? 'border-cyan-500 bg-cyan-500/10' 
-                  : 'border-slate-700 hover:border-slate-600'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              {!uploadedFile ? (
+          <CardContent className="p-6">
+            {!csvFile ? (
+              <div
+                className={`relative border-2 border-dashed rounded-xl transition-all ${
+                  dragActive 
+                    ? 'border-cyan-500 bg-cyan-500/10' 
+                    : 'border-slate-700 hover:border-slate-600'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
                 <div className="p-12 text-center space-y-4">
                   <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center">
                     <Upload className="w-8 h-8 text-cyan-400" />
@@ -202,11 +315,13 @@ const CSVUploadPage = () => {
                       id="file-upload"
                       accept=".csv"
                       onChange={handleChange}
+                      disabled={success}
                       className="hidden"
                     />
                     <label htmlFor="file-upload">
                       <Button 
                         className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white cursor-pointer"
+                        disabled={success}
                         onClick={() => document.getElementById('file-upload').click()}
                       >
                         Select File
@@ -214,18 +329,20 @@ const CSVUploadPage = () => {
                     </label>
                   </div>
                 </div>
-              ) : (
-                <div className="p-8 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <FileSpreadsheet className="w-6 h-6 text-cyan-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-200 truncate">{uploadedFile.name}</p>
-                      <p className="text-sm text-slate-400">
-                        {(uploadedFile.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-slate-700">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FileSpreadsheet className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-200 truncate">{csvFile.name}</p>
+                    <p className="text-sm text-slate-400">
+                      {(csvFile.size / 1024).toFixed(2)} KB • {transactionCount} transactions
+                    </p>
+                  </div>
+                  {!success && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -234,167 +351,100 @@ const CSVUploadPage = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
-                  </div>
-
-                  {uploadStatus === 'processing' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Uploading...</span>
-                        <span className="text-cyan-400">{uploadProgress}%</span>
-                      </div>
-                      <Progress value={uploadProgress} className="h-2 bg-slate-800" />
-                    </div>
-                  )}
-
-                  {uploadStatus === 'success' && (
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span className="text-sm font-medium">Upload complete</span>
-                    </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            {uploadedFile && (
-              <div className="mt-6 flex gap-3">
-                {uploadStatus === 'success' && (
-                  <>
-                    <Button 
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
-                      onClick={() => {
-                        // Navigate to dashboard or another page
-                        window.location.href = '/dashboard';
-                        // Or use React Router: navigate('/dashboard');
-                      }}
-                    >
-                      Go to Dashboard
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                      onClick={removeFile}
-                    >
-                      Upload Another
-                    </Button>
-                  </>
-                )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* CSV Format Guide */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {previewData && previewData.length > 0 && !success && (
           <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <File className="w-5 h-5 text-cyan-400" />
-                Required Format
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
-                Your CSV should include these columns
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-cyan-400" />
+                    Data Preview
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-400">
+                    Review your data before processing
+                  </CardDescription>
+                </div>
+                <div className="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-full text-sm font-medium">
+                  {transactionCount} transactions
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {sampleData.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-slate-200">{item.field}</p>
-                        {item.required && (
-                          <span className="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full">
-                            Required
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 mt-1">e.g., {item.example}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Date</th>
+                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Category</th>
+                      <th className="text-right py-3 px-4 text-slate-400 font-medium">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((row, idx) => (
+                      <tr key={idx} className="border-b border-slate-800 hover:bg-slate-800/30">
+                        <td className="py-3 px-4 text-slate-300">{row.Date}</td>
+                        <td className="py-3 px-4 text-slate-300">{row.Category}</td>
+                        <td className="py-3 px-4 text-right text-slate-300">${row.Amount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              {previewData.length < transactionCount && (
+                <p className="text-xs text-slate-500 text-center mt-3">
+                  Showing first {previewData.length} of {transactionCount} transactions
+                </p>
+              )}
             </CardContent>
           </Card>
+        )}
 
-          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-cyan-400" />
-                Tips & Guidelines
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
-                Best practices for data upload
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-6 h-6 bg-cyan-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Use standard date format</p>
-                    <p className="text-xs text-slate-400 mt-1">YYYY-MM-DD or MM/DD/YYYY</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-6 h-6 bg-cyan-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Remove currency symbols</p>
-                    <p className="text-xs text-slate-400 mt-1">Use plain numbers for amounts</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-6 h-6 bg-cyan-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Include headers</p>
-                    <p className="text-xs text-slate-400 mt-1">First row should contain column names</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-6 h-6 bg-cyan-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Keep it clean</p>
-                    <p className="text-xs text-slate-400 mt-1">Remove empty rows and special characters</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex gap-4">
+          {!success ? (
+            <Button
+              className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!canProcess}
+              onClick={handleProcessData}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {loadingMessage}
+                </>
+              ) : (
+                <>
+                  Process Data
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+          ) : (
+            <>
+              <Button
+                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg"
+                onClick={handleGoToDashboard}
+              >
+                Go to Dashboard
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                onClick={handleUploadAgain}
+              >
+                Upload Again
+              </Button>
+            </>
+          )}
         </div>
 
-        {/* Download Template */}
-        <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl flex items-center justify-center">
-                  <Download className="w-6 h-6 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-slate-200">Need a template?</p>
-                  <p className="text-sm text-slate-400">Download our sample CSV file to get started</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-              >
-                Download Template
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Note */}
         <div className="text-center">
           <p className="text-xs text-slate-500 flex items-center justify-center gap-2">
             <CheckCircle2 className="w-3 h-3" />
@@ -406,4 +456,4 @@ const CSVUploadPage = () => {
   );
 };
 
-export default CSVUploadPage;
+export default TransactionUploadPage;
