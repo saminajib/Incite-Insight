@@ -153,9 +153,35 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="pt-0 border-0 bg-grey-600 shadow-none">
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="bg-grey-600 dark:bg-slate-900 h-[250px] w-full">
+    <Card className="pt-0 border-0">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+        <div className="grid flex-1 gap-1">
+          <CardTitle>Area Chart - Interactive</CardTitle>
+          <CardDescription>
+            Showing total visitors for the last 3 months
+          </CardDescription>
+        </div>
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger
+            className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
+            aria-label="Select a value">
+            <SelectValue placeholder="Last 3 months" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="90d" className="rounded-lg">
+              Last 3 months
+            </SelectItem>
+            <SelectItem value="30d" className="rounded-lg">
+              Last 30 days
+            </SelectItem>
+            <SelectItem value="7d" className="rounded-lg">
+              Last 7 days
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6 border-0">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
           <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
@@ -167,7 +193,7 @@ export function ChartAreaInteractive() {
                 <stop offset="95%" stopColor="var(--color-mobile)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeWidth={0.5} />
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -205,6 +231,7 @@ export function ChartAreaInteractive() {
               fill="url(#fillDesktop)"
               stroke="var(--color-desktop)"
               stackId="a" />
+            <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>
         </ChartContainer>
       </CardContent>

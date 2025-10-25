@@ -8,13 +8,17 @@ import path from "path";
 config({ path: path.resolve(process.cwd(), "server/.env") });
 
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+
 const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
 
 
-const ai = new GoogleGenAI({});
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
+
+//const monthIncome
 
 
 
@@ -80,25 +84,40 @@ const computeSuperCategoryCounts = (data) => {
 };
 
 const computeMonthlySpending = (data) => {
-  const now = new Date("9-25-2024");
-  const monthlyTotals = {};
+  const monthlyTotals = computeMonthlySpending(data);
+  const superCategoryStats = computeSuperCategories(data, categoryMap);
 
-  data.forEach((row) => {
-    if (!row.date || !row.amount) return;
+  // Limit to the past 12 months
+  const chartData = make12MonthChartData(monthlyTotals);
 
-    const date = new Date(row.date);
-    if (isNaN(date)) return;
+  return {
+    monthlySpending: {
+      monthlyTotals: chartData.reduce((acc, { month, total }) => {
+        acc[month] = total;
+        return acc;
+      }, {}),
+      chartData
+    },
+    superCategories: superCategoryStats
+  };
+}
 
-    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const amount = parseFloat(row.amount);
-    if (isNaN(amount)) return;
+function make12MonthChartData(monthlyTotals) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const chartData = [];
 
-    if (!monthlyTotals[yearMonth]) monthlyTotals[yearMonth] = 0;
-    monthlyTotals[yearMonth] += amount;
-  });
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(currentYear, currentMonth - i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (monthlyTotals[key]) {
+      chartData.unshift({ month: key, total: monthlyTotals[key] });
+    }
+  }
 
-  return monthlyTotals;
-};
+  return chartData;
+}
 
 
 
@@ -169,6 +188,19 @@ const spendingData = {
   }
 };
 
+const spendingData2 = {
+  income: 3000,
+  categories: {
+    rent: 1000,
+    dining_out: 400,
+    groceries: 300,
+    entertainment: 325,
+    transportation: 250,
+    shopping: 400,
+    other: 300
+  }
+};
+
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -198,7 +230,6 @@ async function spendingAdvice(data) {
 }
 
 spendingAdvice(spendingData);
-console.log('--------------------------------');
 
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
@@ -228,7 +259,33 @@ async function investmentAdvice(data) {
 }
 
 investmentAdvice(spendingData);
-console.log('--------------------------------');
 
 
-  
+async function comparison(month1, month2) {
+const response = await ai.models.generateContent({
+model: "gemini-2.5-flash",
+contents:
+"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+config: {
+responseMimeType: "application/json",
+responseSchema: {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      advice: {
+        type: Type.STRING,
+      },
+      estimate: {
+        type: Type.INTEGER,
+      },
+    },
+    propertyOrdering: ["advice", "estimate"],
+  },
+},
+}
+});
+console.log(response.text);
+}
+
+comparison(spendingData, spendingData2);
