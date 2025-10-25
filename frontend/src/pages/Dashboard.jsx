@@ -3,6 +3,7 @@ import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Li
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 
 const BudgetDashboard = () => {
+  const [chart1Data, setChart1Data] = useState([{date:"oct", mobile:55},{date:"oct", mobile:55}]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -75,7 +76,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive />
+                    <ChartAreaInteractive data={chart1Data} />
                 </div>
               </div>
             </div>
@@ -127,7 +128,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive />
+                    <ChartAreaInteractive data={chart1Data} />
                 </div>
               </div>
             </div>
