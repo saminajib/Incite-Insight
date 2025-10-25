@@ -247,8 +247,6 @@ async function investmentAdvice(data) {
 }
 
 
-
-
 async function comparison(month1, month2) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
@@ -340,23 +338,33 @@ async function monthlySpendingByCategory(csvData) {
         }
 
         const month = date.slice(0, 7); // Extract YYYY-MM
+        const superCategory = superCategoryMap[category] || "Other";
 
         if (!result[month]) {
           result[month] = {};
         }
 
-        if (!result[month][category]) {
-          result[month][category] = 0;
+
+        if (!result[month][superCategory]) {
+          result[month][superCategory] = 0;
         }
 
-        result[month][category] += amount;
+        result[month][superCategory] += amount;
       });
+
+      for (const month in result) {
+        for (const superCategory in result[month]) {
+          result[month][superCategory] = parseFloat(result[month][superCategory].toFixed(2));
+        }
+      }
 
       resolve(result);
     });
   });
 }
 
-const data = await parseCSV(req.file.path);
 
-console.log("Monthly Spending by Category:", await monthlySpendingByCategory(data));
+const testCSVPath = path.resolve(process.cwd(), "server/budget_data.csv");
+const csvData = fs.readFileSync(testCSVPath, "utf-8");
+
+console.log("Monthly Spending by Category:", await monthlySpendingByCategory(csvData));
