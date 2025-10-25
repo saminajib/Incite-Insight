@@ -146,34 +146,6 @@ app.listen(port, () => {
 
 
 
-// test prompt creation
-const spendingData = {
-  income: 4000,
-  categories: {
-    rent: 1500,
-    dining_out: 600,
-    groceries: 450,
-    entertainment: 300,
-    transportation: 250,
-    shopping: 400,
-    other: 200
-  }
-};
-
-const spendingData2 = {
-  income: 3000,
-  categories: {
-    rent: 1000,
-    dining_out: 400,
-    groceries: 300,
-    entertainment: 325,
-    transportation: 250,
-    shopping: 400,
-    other: 300
-  }
-};
-
-
 //functions below all prompt the AI model, parse the response, and return it in JSON format
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
@@ -212,7 +184,7 @@ async function spendingAdvice(data) {
 const spendData = await spendingAdvice(spendingData);
 console.log(spendData);
 
-
+//function for investment advice from gemini
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -246,7 +218,7 @@ async function investmentAdvice(data) {
   }
 }
 
-
+//comparison function between two months, not implemented in endpoints yet
 async function comparison(month1, month2) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
@@ -313,10 +285,12 @@ app.post("/investment-advice", express.json(),  async (req, res) => {
 });
 
 
+//function that passes in the parsed csv data separated by month with supercategories and finds the specific month
+async function findMonthlyData(data, month) {
+  return data[month];
+}
 
-
-
-//getting monthly spending by category
+//getting monthly spending by category with the supercategory mapping for total spending per category per month
 async function monthlySpendingByCategory(csvData) {
   return new Promise((resolve, reject) => {
     parse(csvData, { columns: true, trim: true }, (err, rows) => {
@@ -364,7 +338,12 @@ async function monthlySpendingByCategory(csvData) {
 }
 
 
+
+//testing previous two functions
 const testCSVPath = path.resolve(process.cwd(), "server/budget_data.csv");
 const csvData = fs.readFileSync(testCSVPath, "utf-8");
 
 console.log("Monthly Spending by Category:", await monthlySpendingByCategory(csvData));
+
+const item = await findMonthlyData(await monthlySpendingByCategory(csvData), "2023-08");
+console.log("Monthly Data for 2023-08:", item); 
