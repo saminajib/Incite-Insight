@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
+import { useEffect, useState } from "react";
+
 export const description = "A radar chart with dots"
 
-const chartData = [
+const defaultData = [
   { month: "January", desktop: 186 },
   { month: "February", desktop: 305 },
   { month: "March", desktop: 237 },
@@ -24,31 +26,34 @@ const chartData = [
   { month: "June", desktop: 214 },
 ]
 
+/* Change this */
 const chartConfig = {
   desktop: {
     label: "Desktop",
-    color: "var(--chart-1)",
+    color: "var(--chart-4)",
   }
 }
 
-export function ChartRadarDots() {
+export function ChartRadarDots({data = [] }) {
+
+  if (!data || data.length == 0){
+    data = defaultData;
+  }
+
   return (
-    <Card className="border-0 shadow-none">
+    <Card className="border-0 shadow-none bg-transparent">
+
       <CardHeader className="items-center">
-        {/* <CardTitle>Radar {Chart name here} </CardTitle> */}
-        {/* <CardDescription>
-          { Description of chart here }
-        </CardDescription> */}
       </CardHeader>
       <CardContent className="pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
-          <RadarChart data={chartData}>
+          <RadarChart data={data}>
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <PolarAngleAxis dataKey="month" />
-            <PolarGrid />
+            <PolarGrid stroke="gray"/>
             <Radar
               dataKey="desktop"
-              fill="var(--color-desktop)"
+              fill="url(#fillMobile)"
               fillOpacity={0.6}
               dot={{
                 r: 4,
@@ -57,14 +62,7 @@ export function ChartRadarDots() {
           </RadarChart>
         </ChartContainer>
       </CardContent>
-      {/* <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="text-muted-foreground flex items-center gap-2 leading-none">
-          January - June 2024
-        </div>
-      </CardFooter> */}
+      
     </Card>
   );
 }

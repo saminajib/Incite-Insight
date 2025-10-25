@@ -3,12 +3,15 @@ import {parse} from "csv-parse";
 import multer from "multer";
 import fs from "fs";
 import { GoogleGenAI, Type } from "@google/genai";
-import { config } from "dotenv";
+import dotenv from "dotenv";
 import path from "path";
-config({ path: path.resolve(process.cwd(), "server/.env") });
+//config({ path: path.resolve(process.cwd(), "server/.env") });
 
+
+dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+console.log(GEMINI_API_KEY);
 
 
 const app = express();
