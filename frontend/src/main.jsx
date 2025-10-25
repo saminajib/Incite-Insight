@@ -7,6 +7,6 @@ import GraphTest from './pages/GraphTest'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GraphTest />
+    <Dashboard />
   </StrictMode>,
 )
