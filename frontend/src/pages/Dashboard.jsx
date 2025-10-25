@@ -5,6 +5,8 @@ import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([{date:"oct", mobile:55},{date:"oct", mobile:55}]);
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
       {/* Fixed Top Navigation */}
@@ -128,7 +130,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive data={chart1Data} />
+                    <ChartAreaInteractive data={chart1Data} strokeColor="var(--color-mobile)" fillColor="url(#fillMobile)" />
                 </div>
               </div>
             </div>
@@ -177,53 +179,21 @@ const BudgetDashboard = () => {
         </div>
 
         {/* Financial Predictions Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-6">Predicted Financial Outlook</h2>
-          <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-8">
-            <div className="grid grid-cols-3 gap-6">
-              {['Next Month', '3 Months', '6 Months'].map((period, idx) => (
-                <div key={idx} className="relative">
-                  <div className="backdrop-blur-sm bg-slate-700/30 border border-slate-600/30 rounded-xl p-6 hover:border-cyan-500/40 transition-all">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-slate-400 font-medium">{period}</span>
-                      <div className="flex items-center gap-1 text-emerald-400">
-                        <ArrowUpRight className="w-4 h-4" />
-                        <span className="text-sm font-semibold">0%</span>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-2xl font-bold text-white mb-1">$0.00</p>
-                      <p className="text-slate-500 text-sm">Projected Balance</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Income</span>
-                        <span className="text-emerald-400 font-semibold">$0.00</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Expenses</span>
-                        <span className="text-rose-400 font-semibold">$0.00</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Savings</span>
-                        <span className="text-cyan-400 font-semibold">$0.00</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full" style={{width: '0%'}}></div>
-                    </div>
-                  </div>
-                  {idx < 2 && (
-                    <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                      <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-cyan-500 flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+        <div className="col-span-8 backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-cyan-500/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+            <div>
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-cyan-400" />
+                Possible Net Worth Over Time
+                </h3>
+                <p className="text-slate-400 text-sm mt-1">Track your wealth accumulation</p>
             </div>
-          </div>
+            </div>
+            <div className='grid-cols-8'>
+            <div className='col-span-8'>
+                <ChartAreaInteractive data={chart1Data} strokeColor="pink" fillColor="url(#fillPink)" />
+            </div>
+            </div>
         </div>
 
         {/* Transaction History Section */}
