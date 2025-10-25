@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar } from 'lucide-react';
+import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 
 const BudgetDashboard = () => {
 
@@ -71,15 +72,10 @@ const BudgetDashboard = () => {
                   </h3>
                   <p className="text-slate-400 text-sm mt-1">Monthly spending patterns over time</p>
                 </div>
-              </div>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
-                <div className="text-center">
-                  <LineChart className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500">Chart placeholder</p>
-                </div>
+                <ChartAreaInteractive />
               </div>
             </div>
-
+            
             {/* Category Breakdown - Medium */}
             <div className="col-span-4 backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/30 transition-all">
               <div className="mb-4">

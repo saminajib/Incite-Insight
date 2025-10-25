@@ -18,6 +18,9 @@ const upload = multer({dest:'uploads/'});
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
+//const monthIncome
+
+
 
 const parseCSV = (filePath) => {
     return new Promise((resolve, reject) => {
@@ -81,25 +84,40 @@ const computeSuperCategoryCounts = (data) => {
 };
 
 const computeMonthlySpending = (data) => {
-  const now = new Date("9-25-2024");
-  const monthlyTotals = {};
+  const monthlyTotals = computeMonthlySpending(data);
+  const superCategoryStats = computeSuperCategories(data, categoryMap);
 
-  data.forEach((row) => {
-    if (!row.date || !row.amount) return;
+  // Limit to the past 12 months
+  const chartData = make12MonthChartData(monthlyTotals);
 
-    const date = new Date(row.date);
-    if (isNaN(date)) return;
+  return {
+    monthlySpending: {
+      monthlyTotals: chartData.reduce((acc, { month, total }) => {
+        acc[month] = total;
+        return acc;
+      }, {}),
+      chartData
+    },
+    superCategories: superCategoryStats
+  };
+}
 
-    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const amount = parseFloat(row.amount);
-    if (isNaN(amount)) return;
+function make12MonthChartData(monthlyTotals) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const chartData = [];
 
-    if (!monthlyTotals[yearMonth]) monthlyTotals[yearMonth] = 0;
-    monthlyTotals[yearMonth] += amount;
-  });
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(currentYear, currentMonth - i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (monthlyTotals[key]) {
+      chartData.unshift({ month: key, total: monthlyTotals[key] });
+    }
+  }
 
-  return monthlyTotals;
-};
+  return chartData;
+}
 
 
 
