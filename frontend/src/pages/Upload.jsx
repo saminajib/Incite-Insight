@@ -226,7 +226,7 @@ const TransactionUploadPage = () => {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-cyan-400" />
-                Monthly Income
+                <span className="text-white">Monthly Income</span>
                 <span className="text-red-400 text-sm">*</span>
               </CardTitle>
               <CardDescription className="text-xs text-slate-400">
@@ -252,7 +252,7 @@ const TransactionUploadPage = () => {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-cyan-400" />
-                Required Format
+                <span className='text-white'>Required Format</span>
               </CardTitle>
               <CardDescription className="text-xs text-slate-400">
                 Your CSV must have these exact column names
