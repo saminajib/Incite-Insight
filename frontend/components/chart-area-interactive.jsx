@@ -153,9 +153,9 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="pt-0 border-0">
+    <Card className="pt-0 border-0 bg-grey-600 shadow-none">
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+        <ChartContainer config={chartConfig} className="bg-grey-600 dark:bg-slate-900 h-[250px] w-full">
           <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
@@ -167,7 +167,7 @@ export function ChartAreaInteractive() {
                 <stop offset="95%" stopColor="var(--color-mobile)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} strokeWidth={0.5} />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -205,7 +205,6 @@ export function ChartAreaInteractive() {
               fill="url(#fillDesktop)"
               stroke="var(--color-desktop)"
               stackId="a" />
-            <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>
         </ChartContainer>
       </CardContent>
