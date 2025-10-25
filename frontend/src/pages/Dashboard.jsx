@@ -3,6 +3,7 @@ import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Li
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 
 const BudgetDashboard = () => {
+  const [chart1Data, setChart1Data] = useState([{date:"oct", mobile:55},{date:"oct", mobile:55}]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -72,10 +73,14 @@ const BudgetDashboard = () => {
                   </h3>
                   <p className="text-slate-400 text-sm mt-1">Monthly spending patterns over time</p>
                 </div>
-                <ChartAreaInteractive />
+              </div>
+              <div className='grid-cols-8'>
+                <div className='col-span-8'>
+                    <ChartAreaInteractive data={chart1Data} />
+                </div>
               </div>
             </div>
-            
+
             {/* Category Breakdown - Medium */}
             <div className="col-span-4 backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/30 transition-all">
               <div className="mb-4">
@@ -121,10 +126,9 @@ const BudgetDashboard = () => {
                   <p className="text-slate-400 text-sm mt-1">Track your wealth accumulation</p>
                 </div>
               </div>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
-                <div className="text-center">
-                  <TrendingUp className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500">Chart placeholder</p>
+              <div className='grid-cols-8'>
+                <div className='col-span-8'>
+                    <ChartAreaInteractive data={chart1Data} />
                 </div>
               </div>
             </div>

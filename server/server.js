@@ -8,6 +8,9 @@ import path from "path";
 config({ path: path.resolve(process.cwd(), "server/.env") });
 
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+
 const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
@@ -16,8 +19,10 @@ const upload = multer({dest:'uploads/'});
 app.use(express.urlencoded({ extended: true })); 
 
 
-const ai = new GoogleGenAI({});
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
+
+//const monthIncome
+
 
 
 const parseCSV = (filePath) => {
@@ -167,34 +172,6 @@ app.listen(port, () => {
 
 
 
-// Normalize various response formats to a string
-function normalizeText(resp) {
-  if (!resp) return '';
-  if (typeof resp === 'string') return resp;
-  if (resp.text) return resp.text;
-
-  const output = resp.output?.[0]?.content;
-  if (Array.isArray(output)) {
-    const textBlock = output.find(block => block.type === 'text' && block.text);
-    if (textBlock) return textBlock.text ?? textBlock;
-  } 
-  try { return JSON.stringify(resp); } catch { return String(resp); }
-}
-
-//prompt function, takes input for prompt and model, gets response based on provided info
-export async function generateGeminiResponse({prompt, model = DEFAULT_MODEL, temperature = 0.2, maxOutputTokens = 512 } = {}) {
-  const contents = Array.isArray(prompt) ? prompt : [{ type: "text", text: String(prompt) }];
-  const resp = await ai.models.generateContent({
-    model,
-    contents,
-    temperature,
-    maxOutputTokens,
-  });
-  return normalizeText(resp);
-}
-
-
-
 
 // test prompt creation
 const spendingData = {
@@ -210,6 +187,21 @@ const spendingData = {
   }
 };
 
+const spendingData2 = {
+  income: 3000,
+  categories: {
+    rent: 1000,
+    dining_out: 400,
+    groceries: 300,
+    entertainment: 325,
+    transportation: 250,
+    shopping: 400,
+    other: 300
+  }
+};
+
+
+//functions below all prompt the AI model, parse the response, and return it in JSON format
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -235,11 +227,17 @@ async function spendingAdvice(data) {
     },
   });
 
-  console.log(response.text);
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-//spendingAdvice(spendingData);
-console.log('--------------------------------');
+const spendData = await spendingAdvice(spendingData);
+console.log(spendData);
+
 
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
@@ -265,12 +263,50 @@ async function investmentAdvice(data) {
       },
     }
   });
-  console.log(response.text);
+
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-//investmentAdvice(spendingData);
-console.log('--------------------------------');
-console.log()
+const investData = await investmentAdvice(spendingData);
+console.log(investData);
 
 
-  
+async function comparison(month1, month2) {
+const response = await ai.models.generateContent({
+model: "gemini-2.5-flash",
+contents:
+"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending going forward(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+config: {
+responseMimeType: "application/json",
+responseSchema: {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      advice: {
+        type: Type.STRING,
+      },
+      estimate: {
+        type: Type.INTEGER,
+      },
+    },
+    propertyOrdering: ["advice", "estimate"],
+  },
+},
+}
+});
+try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
+}
+
+const compData = await comparison(spendingData, spendingData2);
+console.log(compData);
