@@ -13,12 +13,11 @@ const port = 3000;
 const upload = multer({dest:'uploads/'});
 
 
+app.use(express.urlencoded({ extended: true })); 
+
+
 const ai = new GoogleGenAI({});
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
-
-//const monthIncome
-
 
 
 const parseCSV = (filePath) => {
@@ -82,42 +81,62 @@ const computeSuperCategoryCounts = (data) => {
   return result;
 };
 
+var averageSpend;
+
 const computeMonthlySpending = (data) => {
-  const monthlyTotals = computeMonthlySpending(data);
-  const superCategoryStats = computeSuperCategories(data, categoryMap);
+  const now = new Date("9-08-2024");
+  const monthlyTotals = {};
 
-  // Limit to the past 12 months
-  const chartData = make12MonthChartData(monthlyTotals);
+  // First, sum amounts per year-month
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
 
-  return {
-    monthlySpending: {
-      monthlyTotals: chartData.reduce((acc, { month, total }) => {
-        acc[month] = total;
-        return acc;
-      }, {}),
-      chartData
-    },
-    superCategories: superCategoryStats
-  };
-}
-
-function make12MonthChartData(monthlyTotals) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const chartData = [];
-
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(currentYear, currentMonth - i, 1);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if (monthlyTotals[key]) {
-      chartData.unshift({ month: key, total: monthlyTotals[key] });
-    }
+    const amount = parseFloat(row.amount);
+    if (isNaN(amount)) return;
+
+    monthlyTotals[key] = (monthlyTotals[key] || 0) + amount;
+  });
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  let sum = 0;
+
+  const chartData = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const monthShort = monthNames[d.getMonth()];
+    sum += monthlyTotals[key] || 0;
+    chartData.push({ month: monthShort, total: monthlyTotals[key] || 0 });
   }
 
-  return chartData;
-}
+  averageSpend = sum/12;
 
+  return { chartData, averageSpend };
+};
+
+
+const computeSavingsProjection = (monthlyIncome) => {
+  const monthlySavings = monthlyIncome - averageSpend;
+  const monthlyRate = 0.07;
+  const totalYears = 40;
+  const projections = [];
+
+  for (let years = 5; years <= totalYears; years += 5) {
+    const months = years * 12;
+
+    const futureValue = monthlySavings * ((Math.pow(1 + monthlyRate/ months, 12)));
+    projections.push({
+      years,
+      futureValue: parseFloat(futureValue.toFixed(2))
+    });
+  }
+
+  return projections;
+};
 
 
 app.post("/upload", upload.single('file'), async (req, res) => {
@@ -127,11 +146,15 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const data = await parseCSV(req.file.path);
     
     const insights = computeSuperCategoryCounts(data);
-    const monthlySpending = computeMonthlySpending(data);
+    const { chartData: monthlySpending, averageSpend } = computeMonthlySpending(data);
+    console.log(averageSpend);
+    const monthlyIncome = parseFloat(req.body.monthlyIncome);
+    
 
+    const savingsProjection = computeSavingsProjection(monthlyIncome, averageSpend);
     fs.unlink(req.file.path, () => {});
 
-    res.json({ message: 'File parsed successfully', data, insights, monthlySpending });
+    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
@@ -215,7 +238,7 @@ async function spendingAdvice(data) {
   console.log(response.text);
 }
 
-spendingAdvice(spendingData);
+//spendingAdvice(spendingData);
 console.log('--------------------------------');
 
 async function investmentAdvice(data) {
@@ -245,8 +268,9 @@ async function investmentAdvice(data) {
   console.log(response.text);
 }
 
-investmentAdvice(spendingData);
+//investmentAdvice(spendingData);
 console.log('--------------------------------');
+console.log()
 
 
   
