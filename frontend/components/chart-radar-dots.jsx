@@ -55,8 +55,7 @@ export function ChartRadarDots({data=[], dataKeyAxis="", dataKeyRadar=""}) {
   return (
     <Card className="border-0 shadow-none bg-transparent">
 
-      <CardHeader className="items-center">
-      </CardHeader>
+      
       <CardContent className="pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
           <RadarChart data={data}>
