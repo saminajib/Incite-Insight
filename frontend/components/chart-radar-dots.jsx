@@ -34,10 +34,22 @@ const chartConfig = {
   }
 }
 
-export function ChartRadarDots({data = [] }) {
+export function ChartRadarDots({data=[], dataKeyAxis="", dataKeyRadar=""}) {
 
   if (!data || data.length == 0){
     data = defaultData;
+    console.log("Radar dots chart: Data empty. Using default data...\n");
+  }
+
+  if(dataKeyAxis == ""){
+    dataKeyAxis = "month";
+    console.log("Radar dots chart: No key inputted for PolarAngleAxis. Using default... \n");
+  }
+
+
+  if(dataKeyRadar == ""){
+    dataKeyRadar = "desktop"
+    console.log("Radar dots chart: No key inputted for Radar. Using default...\n");
   }
 
   return (
@@ -49,10 +61,10 @@ export function ChartRadarDots({data = [] }) {
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
           <RadarChart data={data}>
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <PolarAngleAxis dataKey="month" />
+            <PolarAngleAxis dataKey={dataKeyAxis} />
             <PolarGrid stroke="gray"/>
             <Radar
-              dataKey="desktop"
+              dataKey={dataKeyRadar}
               fill="url(#fillMobile)"
               fillOpacity={0.6}
               dot={{
