@@ -141,22 +141,61 @@ app.post("/upload", upload.single('file'), async (req, res) => {
   }
 });
 
+
+app.post("/Gemini", upload.single('file'), async (req, res) => {
+    console.log("Received request at /Gemini endpoint");
+    const income = req.body.income;
+    const filePath = req.file.path;
+    console.log("Recieved file at path:", filePath);
+    try {
+      if (!req.body) return res.status(400).json({ error: 'No data provided' });
+      if (!income) return res.status(400).json({ error: 'Income not provided' });
+
+      const csvData = fs.readFileSync(filePath, "utf-8");
+      console.log("CSV Data:", csvData.slice(0, 100)); // Log first 100 characters for verification
+      const data = await monthlySpendingByCategory(csvData);
+
+
+      const now = new Date();
+      const lastMonth = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, "0")}`;
+      const lastMonthData = await findMonthlyData(data, lastMonth);
+
+      const spendingData = {
+        income: income,
+        categories: lastMonthData || {}
+      };
+
+      const spendingAdviceResult = await spendingAdvice(spendingData);
+      const investmentAdviceResult = await investmentAdvice(spendingData);
+      const alertResult = await alert(spendingData);
+      const forecastingResult = await forecasting(spendingData);
+
+      const consolidateResponse = {
+        message: "File processed successfully",
+        monthlySpending: data,
+        lastMonthData,
+        responses: {
+          spendingAdvice: spendingAdviceResult,
+          investmentAdvice: investmentAdviceResult,
+          alert: alertResult,
+          forecasting: forecastingResult
+        }
+      };
+
+      fs.unlink(filePath, () => {});
+
+      res.json(consolidateResponse);
+
+    } catch (err) {
+      console.error('Error processing Gemini API request:', err);
+      res.status(500).json({ error: 'Failed to process Gemini API request' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}.`);
 });
 
-const spendingData = {
-  income: 4000,
-  categories: {
-    rent: 1500,
-    dining_out: 600,
-    groceries: 450,
-    entertainment: 300,
-    transportation: 250,
-    shopping: 400,
-    other: 200
-  }
-};
 
 
 //functions below all prompt the AI model, parse the response, and return it in JSON format
@@ -193,9 +232,6 @@ async function spendingAdvice(data) {
   }
 }
 
-//leaving this for now to test api requests on others
-const spendData = await spendingAdvice(spendingData);
-console.log(spendData);
 
 //function for investment advice from gemini
 async function investmentAdvice(data) {
@@ -298,45 +334,6 @@ async function forecasting(data) {
 }
 
 
-
-//Gemini endpoints
-app.post("/spending-advice", express.json(), async (req, res) => {
-  try {
-    const { data } = req.body;
-    if (!data) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
-
-    const advice = await spendingAdvice(data);
-    res.json({ advice });
-  } catch (err) {
-    console.error('Error generating spending advice:', err);
-    res.status(500).json({ error: 'Failed to generate spending advice' });
-  }
-});
-
-app.post("/investment-advice", express.json(),  async (req, res) => {
-  try {
-    const { data } = req.body;
-    if (!data) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
-
-    const advice = await investmentAdvice(data);
-    res.json({ advice });
-  } catch (err) {
-    console.error('Error generating investment advice:', err);
-    res.status(500).json({ error: 'Failed to generate investment advice' });
-  }
-});
-
-
-//probably gonna be the one endpoint
-app.post("/AIAPIrequest", express.json(), async (req, res) => {
-
-}
-
-
 //function that passes in the parsed csv data separated by month with supercategories and finds the specific month
 async function findMonthlyData(data, month) {
   return data[month];
@@ -388,14 +385,3 @@ async function monthlySpendingByCategory(csvData) {
     });
   });
 }
-
-
-
-//testing previous two functions
-const testCSVPath = path.resolve(process.cwd(), "../server/budget_data.csv");
-const csvData = fs.readFileSync(testCSVPath, "utf-8");
-
-console.log("Monthly Spending by Category:", await monthlySpendingByCategory(csvData));
-
-const item = await findMonthlyData(await monthlySpendingByCategory(csvData), "2023-08");
-console.log("Monthly Data for 2023-08:", item); 
