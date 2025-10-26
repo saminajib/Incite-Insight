@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 import { 
   DollarSign,
   TrendingUp, 
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ const Home = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button className="bg-gradient-to-br from-pink-600 to-blue-600 hover:from-blue-700 hover:to-cyan-700 text-white">
+              <Button onClick={() => navigate('/upload')} className="bg-gradient-to-br from-pink-600 to-blue-600 hover:from-blue-700 hover:to-cyan-700 text-white">
                 Get Started
               </Button>
             </div>
@@ -89,7 +91,7 @@ const Home = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="font-bold bg-gradient-to-r from-pink-600 to-blue-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg">
+                <Button onClick={() => navigate('/upload')} size="lg" className="font-bold bg-gradient-to-r from-pink-600 to-blue-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg">
                   Get Started
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
