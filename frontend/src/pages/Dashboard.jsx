@@ -30,7 +30,7 @@ const BudgetDashboard = () => {
     const stored = sessionStorage.getItem("financialData");
     const monthlyIncome = sessionStorage.getItem("monthlyIncome");
     const ai = sessionStorage.getItem("ai");
-    if (stored) {
+    if (stored && monthlyIncome) {
 
       const allChartData = JSON.parse(stored);
 
@@ -38,12 +38,10 @@ const BudgetDashboard = () => {
       setChart2Data(transformInsightsData(allChartData.insights));
       setChart3Data(allChartData.savingsProjection);
       setTransactions(allChartData.lastTenRows);
+      setMonthlyIncome(monthlyIncome);
       setAverageMonthlyExpenses(allChartData.monthlyExpenses);
       setBalance(monthlyIncome - averageMonthlyExpenses);
       setRetirementAmount(averageMonthlyExpenses * 12 * 25);
-    }
-    if (monthlyIncome) {
-        setMonthlyIncome(monthlyIncome);
     }
     if(ai)
     {
