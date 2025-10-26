@@ -15,8 +15,7 @@ const BudgetDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [averageMonthlyExpenses, setAverageMonthlyExpenses] = useState(0);
   const [balance, setBalance] = useState(0);
-
-  /* Function to transform data category breakdown chart */
+    /* Function to transform data category breakdown chart */
   const transformInsightsData = (data) =>{
 
     return Object.entries(data).map(([category, categoryData]) => ({
