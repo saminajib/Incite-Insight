@@ -3,6 +3,7 @@ import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Li
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { ChartRadarDots } from '@/components/chart-radar-dots';
 import { ChartPieLabel } from '@/components/chart-pie-label';
+import TransactionCardList from '@/components/TransactionCardList';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
@@ -10,6 +11,7 @@ const BudgetDashboard = () => {
   const [monthlyIncome, setMonthlyIncome] = useState("0");
   const [aiSpendingAdvice, setAiSpendingAdvice] = useState("");
   const [aiInvestmentAdvice, setAiInvestmentAdvice] = useState("");
+  const [transactions, setTransactions] = useState([]);
 
   /* Function to transform data category breakdown chart */
   const transformInsightsData = (data) =>{
@@ -31,6 +33,8 @@ const BudgetDashboard = () => {
 
       setChart1Data(allChartData.monthlySpending);
       setChart2Data(transformInsightsData(allChartData.insights));
+      console.log(allChartData.lastTenRows);
+      setTransactions(allChartData.lastTenRows);
 
     }
     if (monthlyIncome) {
@@ -144,12 +148,6 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1"></p>
               </div>
-              {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
-                <div className="text-center">
-                  <DollarSign className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500">Chart placeholder</p>
-                </div>
-              </div> */}
               <ChartPieLabel data={chart2Data} dataKeyAxis="totalAmount" dataKeyRadar="category"></ChartPieLabel>
             </div>
 
@@ -252,7 +250,7 @@ const BudgetDashboard = () => {
               </button>
             </div>
 
-            <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50">
+            {/* <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50">
               <div className="space-y-3">
                 {Array.from({ length: 12 }).map((_, idx) => (
                   <div
@@ -294,7 +292,8 @@ const BudgetDashboard = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
+            <TransactionCardList data={transactions}></TransactionCardList>
           </div>
         </div>
 
