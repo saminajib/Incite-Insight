@@ -10,9 +10,6 @@ import path from "path";
 
 dotenv.config();
 
-
-dotenv.config();
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 console.log(GEMINI_API_KEY);
 
@@ -227,39 +224,58 @@ app.post("/upload", upload.single('file'), async (req, res) => {
   }
 });
 
+
+app.post("/Gemini", upload.single('file'), async (req, res) => {
+    const monthlyIncome = parseFloat(req.body.monthlyIncome);
+    const filePath = req.file.path;
+    try {
+      if (!req.body) return res.status(400).json({ error: 'No data provided' });
+      if (!monthlyIncome) return res.status(400).json({ error: 'Income not provided' });
+
+      const csvData = fs.readFileSync(filePath, "utf-8");
+      const data = await monthlySpendingByCategory(csvData);
+
+
+      const now = new Date();
+      const lastMonth = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, "0")}`;
+      const lastMonthData = await findMonthlyData(data, lastMonth);
+
+      const spendingData = {
+        income: monthlyIncome,
+        categories: lastMonthData || {}
+      };
+
+      const spendingAdviceResult = await spendingAdvice(spendingData);
+      const investmentAdviceResult = await investmentAdvice(spendingData);
+      const alertResult = await alert(spendingData);
+      const forecastingResult = await forecasting(spendingData);
+
+      const consolidateResponse = {
+        message: "File processed successfully",
+        monthlySpending: data,
+        lastMonthData,
+        responses: {
+          spendingAdvice: spendingAdviceResult,
+          investmentAdvice: investmentAdviceResult,
+          alert: alertResult,
+          forecasting: forecastingResult
+        }
+      };
+
+      fs.unlink(filePath, () => {});
+
+      res.json(consolidateResponse);
+
+    } catch (err) {
+      console.error('Error processing Gemini API request:', err);
+      res.status(500).json({ error: 'Failed to process Gemini API request' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}.`);
 });
 
-
-
-
-// test prompt creation
-const spendingData = {
-  income: 4000,
-  categories: {
-    rent: 1500,
-    dining_out: 600,
-    groceries: 450,
-    entertainment: 300,
-    transportation: 250,
-    shopping: 400,
-    other: 200
-  }
-};
-
-const spendingData2 = {
-  income: 3000,
-  categories: {
-    rent: 1000,
-    dining_out: 400,
-    groceries: 300,
-    entertainment: 325,
-    transportation: 250,
-    shopping: 400,
-    other: 300
-  }
-};
 
 
 //functions below all prompt the AI model, parse the response, and return it in JSON format
@@ -296,10 +312,8 @@ async function spendingAdvice(data) {
   }
 }
 
-const spendData = await spendingAdvice(spendingData);
-console.log(spendData);
 
-
+//function for investment advice from gemini
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -333,15 +347,12 @@ async function investmentAdvice(data) {
   }
 }
 
-const investData = await investmentAdvice(spendingData);
-console.log(investData);
-
-
-async function comparison(month1, month2) {
+//spending alert function that will find alarming spending habits
+async function alert(data) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
 contents:
-"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending going forward(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+"Analyze the data provided and give detailed yet concise(one sentence) insights on alarming spending habits. Give an estimated amount that could be saved if they fix these bad habits. User data: " + JSON.stringify(data),
 config: {
 responseMimeType: "application/json",
 responseSchema: {
@@ -369,5 +380,110 @@ try {
   }
 }
 
-const compData = await comparison(spendingData, spendingData2);
-console.log(compData);
+async function forecasting(data) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents:
+      "Based on the data provided, forecast the user's financial situation for the next month. Keep it conicse in one sentence and provide an estimated amount of free cash they would have. User data: " + JSON.stringify(data),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            advice: {
+              type: Type.STRING,
+            },
+            estimate: {
+              type: Type.INTEGER,
+            },
+          },
+          propertyOrdering: ["advice", "estimate"],
+        },
+      },
+    }
+  });
+
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
+}
+
+
+//function that passes in the parsed csv data separated by month with supercategories and finds the specific month
+async function findMonthlyData(data, month) {
+  return data[month];
+}
+
+//getting monthly spending by category with the supercategory mapping for total spending per category per month
+async function monthlySpendingByCategory(csvData) {
+  return new Promise((resolve, reject) => {
+    parse(csvData, { columns: true, trim: true }, (err, rows) => {
+      if (err) {
+        console.error("Error parsing CSV data:", err);
+        return reject(err); // Reject the promise on error
+      }
+
+      const result = {};
+
+      rows.forEach(row => {
+        const date = row.date;
+        const category = row.category;
+        const amount = parseFloat(row.amount);
+
+        if (!date || !category || isNaN(amount)) {
+          console.warn("Skipping invalid row:", row);
+          return; // Skip invalid rows
+        }
+
+        const month = date.slice(0, 7); // Extract YYYY-MM
+        const superCategory = superCategoryMap[category] || "Other";
+
+        if (!result[month]) {
+          result[month] = {};
+        }
+
+
+        if (!result[month][superCategory]) {
+          result[month][superCategory] = 0;
+        }
+
+        result[month][superCategory] += amount;
+      });
+
+      for (const month in result) {
+        for (const superCategory in result[month]) {
+          result[month][superCategory] = parseFloat(result[month][superCategory].toFixed(2));
+        }
+      }
+
+      resolve(result);
+    });
+  });
+}
+
+
+const futureNetworthPrediction = (monthlyIncome) => {
+  let projections = [];
+
+  for(let years = 0; years <= 50; years += 5)
+  {
+    let curSum = 0;
+
+    for(let months = 0; months <= years * 12; months++)
+    {
+      curSum = curSum * (1 + 0.07 / 12) + monthlyIncome;
+    }
+    
+    projections.push({
+      years,
+      futureValue: parseFloat(curSum.toFixed(2))
+    });
+  }
+
+  return projections;
+}
