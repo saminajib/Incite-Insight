@@ -463,25 +463,3 @@ async function monthlySpendingByCategory(csvData) {
     });
   });
 }
-
-
-const futureNetworthPrediction = (monthlyIncome) => {
-  let projections = [];
-
-  for(let years = 0; years <= 50; years += 5)
-  {
-    let curSum = 0;
-
-    for(let months = 0; months <= years * 12; months++)
-    {
-      curSum = curSum * (1 + 0.07 / 12) + monthlyIncome;
-    }
-    
-    projections.push({
-      years,
-      futureValue: parseFloat(curSum.toFixed(2))
-    });
-  }
-
-  return projections;
-}
