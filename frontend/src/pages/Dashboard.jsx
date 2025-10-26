@@ -7,12 +7,14 @@ import TransactionCardList from '@/components/TransactionCardList';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
-  const [monthlyIncome, setMonthlyIncome] = useState("0");
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [aiSpendingAdvice, setAiSpendingAdvice] = useState("");
   const [aiInvestmentAdvice, setAiInvestmentAdvice] = useState("");
   const [chart2Data, setChart2Data] = useState([]);
   const [chart3Data, setChart3Data] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [averageMonthlyExpenses, setAverageMonthlyExpenses] = useState(0);
+  const [balance, setBalance] = useState(0);
 
   /* Function to transform data category breakdown chart */
   const transformInsightsData = (data) =>{
@@ -36,10 +38,11 @@ const BudgetDashboard = () => {
       setChart2Data(transformInsightsData(allChartData.insights));
       setChart3Data(allChartData.savingsProjection);
       setTransactions(allChartData.lastTenRows);
-
+      setAverageMonthlyExpenses(allChartData.monthlyExpenses || 0);
+      setBalance(monthlyIncome - averageMonthlyExpenses);
     }
     if (monthlyIncome) {
-        setMonthlyIncome("$" + monthlyIncome);
+        setMonthlyIncome(monthlyIncome);
     }
     if(ai)
     {
@@ -83,10 +86,10 @@ const BudgetDashboard = () => {
           <h2 className="text-3xl font-bold text-white mb-6">Financial Overview</h2>
           <div className="grid grid-cols-4 gap-5">
             {[
-              { label: 'Total Balance', value: '$0.00', icon: DollarSign, color: 'from-cyan-500 to-blue-500', glow: 'cyan' },
-              { label: 'Monthly Income', value: monthlyIncome, icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
-              { label: 'Monthly Expenses', value: '$0.00', icon: TrendingDown, color: 'from-pink-500 to-rose-500', glow: 'rose' },
-              { label: 'Savings Rate', value: '0%', icon: PiggyBank, color: 'from-purple-500 to-indigo-500', glow: 'purple' }
+              { label: 'Total Balance', value: `$${balance}`, icon: DollarSign, color: 'from-cyan-500 to-blue-500', glow: 'cyan' },
+              { label: 'Monthly Income', value: `$${monthlyIncome}`, icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
+              { label: 'Average Monthly Expenses', value: `$${averageMonthlyExpenses}`, icon: TrendingDown, color: 'from-pink-500 to-rose-500', glow: 'rose' },
+              { label: 'Savings Rate', value: '7%', icon: PiggyBank, color: 'from-purple-500 to-indigo-500', glow: 'purple' }
             ].map((metric, idx) => (
               <div key={idx} className="relative group">
                 <div className={`absolute inset-0 bg-gradient-to-br ${metric.color} opacity-20 blur-xl group-hover:opacity-30 transition-opacity rounded-2xl`}></div>
@@ -219,14 +222,14 @@ const BudgetDashboard = () => {
             <div>
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
-                Possible Net Worth Over Time
+                Percentage of way to retirement
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">Track your wealth accumulation</p>
+                <p className="text-slate-400 text-sm mt-1">Track your progress to retirement</p>
             </div>
             </div>
             <div className='grid-cols-8'>
             <div className='col-span-8'>
-                <ChartAreaInteractive data={chart1Data} strokeColor="pink" fillColor="url(#fillPink)" />
+                <ChartAreaInteractive data={chart3Data} strokeColor="pink" fillColor="url(#fillPink), horizontalLineY=1000000" />
             </div>
             </div>
         </div>
@@ -236,21 +239,6 @@ const BudgetDashboard = () => {
           <h2 className="text-3xl font-bold text-white mb-6 pt-8">Recent Transactions</h2>
           <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-2">
-                {['All', 'Income', 'Expenses', 'Categories'].map((filter) => (
-                  <button
-                    key={filter}
-                    className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors border border-slate-600/30 hover:border-slate-500/50"
-                  >
-                    {filter}
-                  </button>
-                ))}
-              </div>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors border border-slate-600/30 hover:border-slate-500/50">
-                <Filter className="w-4 h-4" />
-                Filter
-                <ChevronDown className="w-4 h-4" />
-              </button>
             </div>
 
             {/* <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50">
