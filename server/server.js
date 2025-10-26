@@ -226,16 +226,13 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
 
 app.post("/Gemini", upload.single('file'), async (req, res) => {
-    console.log("Received request at /Gemini endpoint");
-    const income = req.body.income;
+    const monthlyIncome = parseFloat(req.body.monthlyIncome);
     const filePath = req.file.path;
-    console.log("Recieved file at path:", filePath);
     try {
       if (!req.body) return res.status(400).json({ error: 'No data provided' });
-      if (!income) return res.status(400).json({ error: 'Income not provided' });
+      if (!monthlyIncome) return res.status(400).json({ error: 'Income not provided' });
 
       const csvData = fs.readFileSync(filePath, "utf-8");
-      console.log("CSV Data:", csvData.slice(0, 100)); // Log first 100 characters for verification
       const data = await monthlySpendingByCategory(csvData);
 
 
@@ -244,7 +241,7 @@ app.post("/Gemini", upload.single('file'), async (req, res) => {
       const lastMonthData = await findMonthlyData(data, lastMonth);
 
       const spendingData = {
-        income: income,
+        income: monthlyIncome,
         categories: lastMonthData || {}
       };
 
