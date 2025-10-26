@@ -6,6 +6,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import path from "path";
 
+dotenv.config();
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 console.log(GEMINI_API_KEY);
 
@@ -126,10 +128,20 @@ const computeMonthlySpending = (data) => {
   return { chartData };
 };
 
+const monthlyExpending = (data) => {
+    const { chartData } = computeMonthlySpending(data);
+     if (chartData.length === 0) return 0;
 
+  const totalSpending = chartData.reduce((sum, m) => sum + m.y, 0);
+  const avgSpending = totalSpending / chartData.length;
+
+  return parseInt(avgSpending);
+
+  };
 
 const futureNetworthPrediction = (monthlyIncome) => {
   let projections = [];
+  const currentYear = new Date().getFullYear();
 
   for(let years = 0; years <= 50; years += 5)
   {
@@ -141,7 +153,7 @@ const futureNetworthPrediction = (monthlyIncome) => {
     }
 
     projections.push({
-      x: years,
+      x: currentYear + years,
       y: parseFloat(curSum.toFixed(2))
     });
   }
@@ -196,6 +208,51 @@ const compareDailySpending = (data) => {
   return comparisons;
 };
 
+const retirementAge = (monthlyIncome, monthlySpendingData) => {
+  const yearlySpending = monthlySpendingData.reduce((sum, m) => sum + m.y, 0);
+  const averageMonthlySpending = yearlySpending / 12;
+  const monthlySavings = monthlyIncome - averageMonthlySpending;
+
+  if (monthlySavings <= 0) {
+    return { message: "No savings — retirement not possible at current spending." };
+  }
+
+
+  const annualReturn = 0.07; 
+  const target = yearlySpending * 25; 
+  const currentYear = new Date().getFullYear();
+  const startAge = 22; 
+  const maxYears = 50; 
+
+  let curSum = 0; 
+  let retirementYear = null;
+
+  for (let years = 0; years <= maxYears; years++) {
+
+    for (let months = 0; months < 12; months++) {
+      curSum = curSum * (1 + annualReturn / 12) + monthlySavings;
+    }
+
+    if (curSum >= target && !retirementYear) {
+      retirementYear = currentYear + years;
+      return {
+        targetReached: true,
+        retirementAge: startAge + years,
+        retirementYear,
+        totalSavings: parseFloat(curSum.toFixed(2)),
+        target: parseFloat(target.toFixed(2)),
+      };
+    }
+  }
+
+  return {
+    targetReached: false,
+    retirementAge: "Not reached within 50 years",
+    totalSavings: parseFloat(curSum.toFixed(2)),
+    target: parseFloat(target.toFixed(2)),
+  };
+};
+
 
 app.post("/upload", upload.single('file'), async (req, res) => {
     try {
@@ -214,8 +271,11 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     fs.unlink(req.file.path, () => {});
 
     const comparing = compareDailySpending(data);
+    const retirement = retirementAge(monthlyIncome, monthlySpending);
 
-    res.json({ message: 'File parsed successfully', lastTenRows, insights, monthlySpending, savingsProjection, comparing });
+    const monthlyExpenses = monthlyExpending(data);
+
+    res.json({ message: 'File parsed successfully', lastTenRows, insights, monthlySpending, savingsProjection, comparing, retirement, monthlyExpenses });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
