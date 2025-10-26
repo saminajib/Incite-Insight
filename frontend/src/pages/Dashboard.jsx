@@ -229,7 +229,7 @@ const BudgetDashboard = () => {
             </div>
             <div className='grid-cols-8'>
             <div className='col-span-8'>
-                <ChartAreaInteractive data={chart3Data} strokeColor="pink" fillColor="url(#fillPink), horizontalLineY=1000000" />
+                <ChartAreaInteractive data={chart3Data} strokeColor="pink" fillColor="url(#fillPink)" />
             </div>
             </div>
         </div>
