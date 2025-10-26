@@ -233,7 +233,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
     const monthlyExpenses = monthlyExpending(data);
 
-    res.json({ message: 'File parsed successfully', lastTenRows, insights, monthlySpending, savingsProjection, comparing, retirement, monthlyExpenses });
+    res.json({ message: 'File parsed successfully', lastTenRows, insights, monthlySpending, savingsProjection, comparing, monthlyExpenses });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
