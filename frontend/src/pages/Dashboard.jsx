@@ -40,7 +40,6 @@ const BudgetDashboard = () => {
     if(ai)
     {
         const parsedAi = JSON.parse(ai);
-
         setAiSpendingAdvice(parsedAi.responses.spendingAdvice[0].advice);
         console.log(aiSpendingAdvice);
         setAiInvestmentAdvice(parsedAi.responses.investmentAdvice[0].advice);
