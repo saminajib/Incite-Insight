@@ -17,7 +17,8 @@ import {
   Loader2
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3000/upload';
+const API_URL_UPLOAD = 'http://localhost:3000/upload';
+const API_URL_GEMINI = 'http://localhost:3000/Gemini';
 
 const TransactionUploadPage = () => {
   const [monthlyIncome, setMonthlyIncome] = useState('');
@@ -137,10 +138,15 @@ const TransactionUploadPage = () => {
       
       setLoadingMessage('Uploading...');
       
-      const response = await fetch(API_URL, {
+      const response = await fetch(API_URL_UPLOAD, {
         method: 'POST',
         body: formData
       });
+
+      const response_ai = await fetch(API_URL_GEMINI, {
+        method: 'POST',
+        body: formData
+      })
       
       setLoadingMessage('Processing transactions...');
       
@@ -151,11 +157,13 @@ const TransactionUploadPage = () => {
       setLoadingMessage('Generating insights...');
       
       const jsonResponse = await response.json();
+      const jsonResponse_ai = await response_ai.json();
       
       sessionStorage.setItem('financialData', JSON.stringify(jsonResponse));
       sessionStorage.setItem('monthlyIncome', monthlyIncome);
       sessionStorage.setItem('transactionCount', transactionCount.toString());
       sessionStorage.setItem('uploadTime', new Date().toISOString());
+      sessionStorage.setItem('ai', JSON.stringify(jsonResponse_ai));
       
       setSuccess(true);
       setIsLoading(false);

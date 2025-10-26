@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar } from 'lucide-react';
+import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar, ChartPie } from 'lucide-react';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { ChartRadarDots } from '@/components/chart-radar-dots';
-import { ChartRadialLabel } from '@/components/chart-radial-label';
+import { ChartPieLabel } from '@/components/chart-pie-label';
 
 const API_URL = 'http://localhost:3000/Gemini';
 
@@ -11,15 +11,29 @@ const BudgetDashboard = () => {
   const [monthlyIncome, setMonthlyIncome] = useState("0");
   const [aiSpendingAdvice, setAiSpendingAdvice] = useState("");
   const [aiInvestmentAdvice, setAiInvestmentAdvice] = useState("");
+  const [chart2Data, setChart2Data] = useState([]);
+
+  /* Function to transform data category breakdown chart */
+  const transformInsightsData = (data) =>{
+
+    return Object.entries(data).map(([category, categoryData]) => ({
+      category: category,
+      totalAmount: categoryData.totalAmount,
+    }));
+
+  };
 
   useEffect(() => {
     const stored = sessionStorage.getItem("financialData");
     const monthlyIncome = sessionStorage.getItem("monthlyIncome");
     const ai = sessionStorage.getItem("ai");
     if (stored) {
+
       const allChartData = JSON.parse(stored);
 
       setChart1Data(allChartData.monthlySpending);
+      setChart2Data(transformInsightsData(allChartData.insights));
+
     }
     if (monthlyIncome) {
         setMonthlyIncome("$" + monthlyIncome);
@@ -116,15 +130,9 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Spending by category</p>
               </div>
-              {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
-                <div className="text-center">
-                  <PieChart className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500">Chart placeholder</p>
-                </div>
-              </div> */}
               <div className="grid-cols-12">
                 <div className="col-span-4">
-                  <ChartRadarDots></ChartRadarDots>
+                  <ChartRadarDots data={chart2Data} dataKeyAxis="category" dataKeyRadar="totalAmount"></ChartRadarDots>
                 </div>
               </div>
             </div>
@@ -136,7 +144,7 @@ const BudgetDashboard = () => {
                   <DollarSign className="w-5 h-5 text-emerald-400" />
                   Income Sources
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">Revenue stream breakdown</p>
+                <p className="text-slate-400 text-sm mt-1"></p>
               </div>
               {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
                 <div className="text-center">
@@ -144,7 +152,7 @@ const BudgetDashboard = () => {
                   <p className="text-slate-500">Chart placeholder</p>
                 </div>
               </div> */}
-              <ChartRadialLabel></ChartRadialLabel>
+              <ChartPieLabel data={chart2Data} dataKeyAxis="totalAmount" dataKeyRadar="category"></ChartPieLabel>
             </div>
 
             {/* Net Worth Over Time - Wide */}
