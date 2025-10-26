@@ -6,7 +6,8 @@ import { ChartRadialLabel } from '@/components/chart-radial-label';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
-  const [monthlyIncome, setMonthlyIncome] = useState([]);
+  const [monthlyIncome, setMonthlyIncome] = useState("0");
+  const [aiAdvice, setAiAdvice] = useState("");
 
   useEffect(() => {
     const stored = sessionStorage.getItem("financialData");
@@ -21,9 +22,19 @@ const BudgetDashboard = () => {
     }
   }, []);
 
-  useEffect(() => {
-
-  }, []);
+    useEffect(() => {
+    async function fetchData() {
+        try {
+            const res = await fetch('/api/financial');
+            const data = await res.json();
+            setChart1Data(data.monthlySpending);
+            setMonthlyIncome("$" + data.monthlyIncome);
+        } catch (err) {
+            console.error('API error:', err);
+        }
+    }
+    fetchData();
+    }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
