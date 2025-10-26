@@ -11,16 +11,30 @@ import path from "path";
 dotenv.config();
 
 
+dotenv.config();
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+console.log(GEMINI_API_KEY);
 
 
 const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
 
-
-app.use(express.urlencoded({ extended: true })); 
-
+/* Manual CORS middleware */
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
