@@ -3,9 +3,12 @@ import {parse} from "csv-parse";
 import multer from "multer";
 import fs from "fs";
 import { GoogleGenAI, Type } from "@google/genai";
-import { config } from "dotenv";
+//import { config } from "dotenv";
+import dotenv from "dotenv";
 import path from "path";
-config({ path: path.resolve(process.cwd(), "server/.env") });
+//config({ path: path.resolve(process.cwd(), "server/.env") });
+
+dotenv.config();
 
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -92,7 +95,6 @@ const computeMonthlySpending = (data) => {
   const now = new Date("9-08-2024");
   const monthlyTotals = {};
 
-  // First, sum amounts per year-month
   data.forEach((row) => {
     if (!row.date || !row.amount) return;
     const date = new Date(row.date);
@@ -105,7 +107,6 @@ const computeMonthlySpending = (data) => {
     monthlyTotals[key] = (monthlyTotals[key] || 0) + amount;
   });
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   let sum = 0;
 
@@ -113,9 +114,8 @@ const computeMonthlySpending = (data) => {
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const monthShort = monthNames[d.getMonth()];
     sum += monthlyTotals[key] || 0;
-    chartData.push({ month: monthShort, total: monthlyTotals[key] || 0 });
+    chartData.push({ x: key, y: monthlyTotals[key] || 0 });
   }
 
   averageSpend = sum/12;
@@ -127,13 +127,12 @@ const computeMonthlySpending = (data) => {
 const computeSavingsProjection = (monthlyIncome) => {
   const monthlySavings = monthlyIncome - averageSpend;
   const monthlyRate = 0.07;
-  const totalYears = 40;
   const projections = [];
 
-  for (let years = 5; years <= totalYears; years += 5) {
-    const months = years * 12;
+  for (let years = 5; years <= 40; years += 5) {
 
-    const futureValue = monthlySavings * ((Math.pow(1 + monthlyRate/ months, 12)));
+    const futureValue = monthlySavings * Math.pow(1 + monthlyRate/ 12,  12*40);
+
     projections.push({
       years,
       futureValue: parseFloat(futureValue.toFixed(2))
@@ -141,6 +140,52 @@ const computeSavingsProjection = (monthlyIncome) => {
   }
 
   return projections;
+};
+
+const compareDailySpending = (data) => {
+  const now = new Date("9-12-24");
+
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); 
+  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const prevYear = prevMonthDate.getFullYear();
+  const prevMonth = prevMonthDate.getMonth();
+
+  
+  const currentMonthTotals = {};
+  const previousMonthTotals = {};
+
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
+
+    const day = date.getDate();
+    const amount = parseFloat(row.amount) || 0;
+
+    if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+      currentMonthTotals[day] = (currentMonthTotals[day] || 0) + amount;
+    } else if (date.getFullYear() === prevYear && date.getMonth() === prevMonth) {
+      previousMonthTotals[day] = (previousMonthTotals[day] || 0) + amount;
+    }
+  });
+
+
+  const comparisons = [];
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const current = currentMonthTotals[day] || 0;
+    const previous = previousMonthTotals[day] || 0;
+
+    comparisons.push({
+      day,
+      currentMonth: parseFloat(current.toFixed(2)),
+      previousMonth: parseFloat(previous.toFixed(2)),
+    });
+  }
+
+  return comparisons;
 };
 
 
@@ -159,7 +204,9 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const savingsProjection = computeSavingsProjection(monthlyIncome, averageSpend);
     fs.unlink(req.file.path, () => {});
 
-    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection });
+    const comparing = compareDailySpending(data);
+
+    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection, comparing });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
