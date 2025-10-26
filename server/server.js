@@ -85,42 +85,62 @@ const computeSuperCategoryCounts = (data) => {
   return result;
 };
 
+var averageSpend;
+
 const computeMonthlySpending = (data) => {
-  const monthlyTotals = computeMonthlySpending(data);
-  const superCategoryStats = computeSuperCategories(data, categoryMap);
+  const now = new Date("9-08-2024");
+  const monthlyTotals = {};
 
-  // Limit to the past 12 months
-  const chartData = make12MonthChartData(monthlyTotals);
+  // First, sum amounts per year-month
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
 
-  return {
-    monthlySpending: {
-      monthlyTotals: chartData.reduce((acc, { month, total }) => {
-        acc[month] = total;
-        return acc;
-      }, {}),
-      chartData
-    },
-    superCategories: superCategoryStats
-  };
-}
-
-function make12MonthChartData(monthlyTotals) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const chartData = [];
-
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(currentYear, currentMonth - i, 1);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if (monthlyTotals[key]) {
-      chartData.unshift({ month: key, total: monthlyTotals[key] });
-    }
+    const amount = parseFloat(row.amount);
+    if (isNaN(amount)) return;
+
+    monthlyTotals[key] = (monthlyTotals[key] || 0) + amount;
+  });
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  let sum = 0;
+
+  const chartData = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const monthShort = monthNames[d.getMonth()];
+    sum += monthlyTotals[key] || 0;
+    chartData.push({ month: monthShort, total: monthlyTotals[key] || 0 });
   }
 
-  return chartData;
-}
+  averageSpend = sum/12;
 
+  return { chartData, averageSpend };
+};
+
+
+const computeSavingsProjection = (monthlyIncome) => {
+  const monthlySavings = monthlyIncome - averageSpend;
+  const monthlyRate = 0.07;
+  const totalYears = 40;
+  const projections = [];
+
+  for (let years = 5; years <= totalYears; years += 5) {
+    const months = years * 12;
+
+    const futureValue = monthlySavings * ((Math.pow(1 + monthlyRate/ months, 12)));
+    projections.push({
+      years,
+      futureValue: parseFloat(futureValue.toFixed(2))
+    });
+  }
+
+  return projections;
+};
 
 
 app.post("/upload", upload.single('file'), async (req, res) => {
@@ -130,11 +150,15 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const data = await parseCSV(req.file.path);
     
     const insights = computeSuperCategoryCounts(data);
-    const monthlySpending = computeMonthlySpending(data);
+    const { chartData: monthlySpending, averageSpend } = computeMonthlySpending(data);
+    console.log(averageSpend);
+    const monthlyIncome = parseFloat(req.body.monthlyIncome);
+    
 
+    const savingsProjection = computeSavingsProjection(monthlyIncome, averageSpend);
     fs.unlink(req.file.path, () => {});
 
-    res.json({ message: 'File parsed successfully', data, insights, monthlySpending });
+    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
@@ -144,34 +168,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}.`);
 });
-
-
-
-// Normalize various response formats to a string
-function normalizeText(resp) {
-  if (!resp) return '';
-  if (typeof resp === 'string') return resp;
-  if (resp.text) return resp.text;
-
-  const output = resp.output?.[0]?.content;
-  if (Array.isArray(output)) {
-    const textBlock = output.find(block => block.type === 'text' && block.text);
-    if (textBlock) return textBlock.text ?? textBlock;
-  } 
-  try { return JSON.stringify(resp); } catch { return String(resp); }
-}
-
-//prompt function, takes input for prompt and model, gets response based on provided info
-export async function generateGeminiResponse({prompt, model = DEFAULT_MODEL, temperature = 0.2, maxOutputTokens = 512 } = {}) {
-  const contents = Array.isArray(prompt) ? prompt : [{ type: "text", text: String(prompt) }];
-  const resp = await ai.models.generateContent({
-    model,
-    contents,
-    temperature,
-    maxOutputTokens,
-  });
-  return normalizeText(resp);
-}
 
 
 
@@ -203,6 +199,8 @@ const spendingData2 = {
   }
 };
 
+
+//functions below all prompt the AI model, parse the response, and return it in JSON format
 async function spendingAdvice(data) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -228,10 +226,17 @@ async function spendingAdvice(data) {
     },
   });
 
-  console.log(response.text);
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-spendingAdvice(spendingData);
+const spendData = await spendingAdvice(spendingData);
+console.log(spendData);
+
 
 async function investmentAdvice(data) {
   const response = await ai.models.generateContent({
@@ -257,17 +262,24 @@ async function investmentAdvice(data) {
       },
     }
   });
-  console.log(response.text);
+
+  try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-investmentAdvice(spendingData);
+const investData = await investmentAdvice(spendingData);
+console.log(investData);
 
 
 async function comparison(month1, month2) {
 const response = await ai.models.generateContent({
 model: "gemini-2.5-flash",
 contents:
-"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
+"Give detailed yet concise(one sentence) insights on the spending habits between month 1 and month 2 and how the user can regulate spending going forward(be specific) based on what they are most likely to spend money on. Return the advice and an estimated amount saved by the next month if they follow your advice. User Spending Data Month 1: " + JSON.stringify(month1) + " User Spending Data Month 2: " + JSON.stringify(month2),
 config: {
 responseMimeType: "application/json",
 responseSchema: {
@@ -287,7 +299,13 @@ responseSchema: {
 },
 }
 });
-console.log(response.text);
+try {
+    const parsed = JSON.parse(response.text);
+    return parsed;
+  } catch (e) {
+    console.error("Failed to parse response:", e);
+  }
 }
 
-comparison(spendingData, spendingData2);
+const compData = await comparison(spendingData, spendingData2);
+console.log(compData);

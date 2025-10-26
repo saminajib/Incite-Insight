@@ -9,6 +9,7 @@ import UploadCSV from './pages/Upload';
 import {BrowserRouter, Routes, Route} from 'react-router-dom';
 import { Upload } from 'lucide-react'
 
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
