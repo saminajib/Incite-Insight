@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -74,7 +74,7 @@ const ChartAreaInteractive = ({ data, strokeColor = 'Purple', fillColor = 'url(#
             </defs>
             <CartesianGrid vertical={false} strokeWidth={0.5} />
             <XAxis
-              dataKey="month"
+              dataKey="x"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -86,6 +86,11 @@ const ChartAreaInteractive = ({ data, strokeColor = 'Purple', fillColor = 'url(#
                   day: "numeric",
                 });
               }} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
             <ChartTooltip
               cursor={false}
               content={
@@ -99,7 +104,8 @@ const ChartAreaInteractive = ({ data, strokeColor = 'Purple', fillColor = 'url(#
                   indicator="dot" />
               } />
             <Area
-              dataKey="total"
+              dataKey="y"
+              name="Total"
               type="natural"
               fill={fillColor}
               stroke={strokeColor}

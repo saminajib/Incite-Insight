@@ -6,90 +6,23 @@ import { ChartRadialLabel } from '@/components/chart-radial-label';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
-
-    sessionStorage.setItem("data", JSON.stringify({
-    "message": "File parsed successfully",
-    "insights": {
-        "Essentials": {
-            "count": 2555,
-            "totalAmount": 40795.82999999985
-        },
-        "Transport": {
-            "count": 403,
-            "totalAmount": 1706.7799999999988
-        },
-        "Other": {
-            "count": 91,
-            "totalAmount": 1570.0499999999997
-        },
-        "Business & Learning": {
-            "count": 477,
-            "totalAmount": 9079.400000000001
-        },
-        "Entertainment": {
-            "count": 82,
-            "totalAmount": 8653.85
-        }
-    },
-    "monthlySpending": [
-        {
-            "month": "2023-10",
-            "total": 1728.259999999999
-        },
-        {
-            "month": "2023-11",
-            "total": 1430.01
-        },
-        {
-            "month": "2023-12",
-            "total": 1808.7400000000002
-        },
-        {
-            "month": "2024-01",
-            "total": 4072.23
-        },
-        {
-            "month": "2024-02",
-            "total": 1247.3599999999997
-        },
-        {
-            "month": "2024-03",
-            "total": 1559.18
-        },
-        {
-            "month": "2024-04",
-            "total": 1706.3
-        },
-        {
-            "month": "2024-05",
-            "total": 4021.4599999999996
-        },
-        {
-            "month": "2024-06",
-            "total": 2644.02
-        },
-        {
-            "month": "2024-07",
-            "total": 5531.889999999999
-        },
-        {
-            "month": "2024-08",
-            "total": 2282.1400000000003
-        },
-        {
-            "month": "2024-09",
-            "total": 2958.2699999999995
-        }
-    ]
-    }));
+  const [monthlyIncome, setMonthlyIncome] = useState([]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("financialData");
+    const monthlyIncome = sessionStorage.getItem("monthlyIncome");
     if (stored) {
       const allChartData = JSON.parse(stored);
 
       setChart1Data(allChartData.monthlySpending);
     }
+    if (monthlyIncome) {
+        setMonthlyIncome("$" + monthlyIncome);
+    }
+  }, []);
+
+  useEffect(() => {
+
   }, []);
 
   return (
@@ -126,7 +59,7 @@ const BudgetDashboard = () => {
           <div className="grid grid-cols-4 gap-5">
             {[
               { label: 'Total Balance', value: '$0.00', icon: DollarSign, color: 'from-cyan-500 to-blue-500', glow: 'cyan' },
-              { label: 'Monthly Income', value: '$0.00', icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
+              { label: 'Monthly Income', value: monthlyIncome, icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
               { label: 'Monthly Expenses', value: '$0.00', icon: TrendingDown, color: 'from-pink-500 to-rose-500', glow: 'rose' },
               { label: 'Savings Rate', value: '0%', icon: PiggyBank, color: 'from-purple-500 to-indigo-500', glow: 'purple' }
             ].map((metric, idx) => (
