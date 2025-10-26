@@ -4,13 +4,18 @@ import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { ChartRadarDots } from '@/components/chart-radar-dots';
 import { ChartRadialLabel } from '@/components/chart-radial-label';
 
+const API_URL = 'http://localhost:3000/Gemini';
+
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
-  const [monthlyIncome, setMonthlyIncome] = useState([]);
+  const [monthlyIncome, setMonthlyIncome] = useState("0");
+  const [aiSpendingAdvice, setAiSpendingAdvice] = useState("");
+  const [aiInvestmentAdvice, setAiInvestmentAdvice] = useState("");
 
   useEffect(() => {
     const stored = sessionStorage.getItem("financialData");
     const monthlyIncome = sessionStorage.getItem("monthlyIncome");
+    const ai = sessionStorage.getItem("ai");
     if (stored) {
       const allChartData = JSON.parse(stored);
 
@@ -19,10 +24,11 @@ const BudgetDashboard = () => {
     if (monthlyIncome) {
         setMonthlyIncome("$" + monthlyIncome);
     }
-  }, []);
-
-  useEffect(() => {
-
+    if(ai)
+    {
+        setAiSpendingAdvice(ai.spendingAdvice);
+        setAiInvestmentAdvice(ai.investmentAdvice);
+    }
   }, []);
 
   return (
@@ -180,10 +186,8 @@ const BudgetDashboard = () => {
 
               <div className="grid grid-cols-2 gap-5">
                 {[
-                  { icon: Lightbulb, title: 'Smart Savings Opportunity', color: 'from-yellow-400 to-orange-400', text: 'AI insight will appear here' },
-                  { icon: Target, title: 'Goal Achievement', color: 'from-emerald-400 to-teal-400', text: 'AI insight will appear here' },
-                  { icon: AlertCircle, title: 'Spending Alert', color: 'from-pink-400 to-rose-400', text: 'AI insight will appear here' },
-                  { icon: TrendingUp, title: 'Investment Suggestion', color: 'from-cyan-400 to-blue-400', text: 'AI insight will appear here' }
+                  { icon: Lightbulb, title: 'Smart Savings Opportunity', color: 'from-yellow-400 to-orange-400', text: aiSpendingAdvice },
+                  { icon: TrendingUp, title: 'Investment Suggestion', color: 'from-cyan-400 to-blue-400', text: aiInvestmentAdvice }
                 ].map((insight, idx) => (
                   <div key={idx} className="backdrop-blur-sm bg-slate-700/30 border border-slate-600/30 rounded-xl p-5 hover:border-slate-500/50 transition-all">
                     <div className="flex items-start gap-4">
