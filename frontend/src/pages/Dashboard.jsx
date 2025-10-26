@@ -7,11 +7,12 @@ import TransactionCardList from '@/components/TransactionCardList';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
-  const [chart2Data, setChart2Data] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState("0");
   const [aiSpendingAdvice, setAiSpendingAdvice] = useState("");
   const [aiInvestmentAdvice, setAiInvestmentAdvice] = useState("");
   const [transactions, setTransactions] = useState([]);
+  const [chart2Data, setChart2Data] = useState([]);
+  const [chart3Data, setChart3Data] = useState([]);
 
   /* Function to transform data category breakdown chart */
   const transformInsightsData = (data) =>{
@@ -36,14 +37,17 @@ const BudgetDashboard = () => {
       console.log(allChartData.lastTenRows);
       setTransactions(allChartData.lastTenRows);
 
+      setChart3Data(allChartData.savingsProjection);
     }
     if (monthlyIncome) {
         setMonthlyIncome("$" + monthlyIncome);
     }
     if(ai)
     {
-        setAiSpendingAdvice(ai.spendingAdvice);
-        setAiInvestmentAdvice(ai.investmentAdvice);
+        const parsedAi = JSON.parse(ai);
+        setAiSpendingAdvice(parsedAi.responses.spendingAdvice[0].advice);
+        console.log(aiSpendingAdvice);
+        setAiInvestmentAdvice(parsedAi.responses.investmentAdvice[0].advice);
     }
   }, []);
 
@@ -164,7 +168,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive data={chart1Data} strokeColor="var(--color-mobile)" fillColor="url(#fillMobile)" />
+                    <ChartAreaInteractive data={chart3Data} strokeColor="var(--color-mobile)" fillColor="url(#fillMobile)" />
                 </div>
               </div>
             </div>

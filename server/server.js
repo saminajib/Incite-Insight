@@ -3,15 +3,12 @@ import {parse} from "csv-parse";
 import multer from "multer";
 import fs from "fs";
 import { GoogleGenAI, Type } from "@google/genai";
-//import { config } from "dotenv";
 import dotenv from "dotenv";
 import path from "path";
-//config({ path: path.resolve(process.cwd(), "server/.env") });
 
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-console.log(GEMINI_API_KEY);
 
 
 const app = express();
@@ -35,8 +32,6 @@ app.use((req, res, next) => {
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
-//const monthIncome
-
 
 
 const parseCSV = (filePath) => {
@@ -52,9 +47,9 @@ const parseCSV = (filePath) => {
 
 const superCategoryMap = {
   Restaurant: "Essentials",
-  Restuarant: "Essentials", // correcting your CSV typo
+  Restuarant: "Essentials",
   Market: "Essentials",
-  Coffe: "Essentials", // typo correction from Coffee
+  Coffe: "Essentials", 
   Coffee: "Essentials",
   Health: "Essentials",
   Clothing: "Essentials",
@@ -100,7 +95,6 @@ const computeSuperCategoryCounts = (data) => {
   return result;
 };
 
-var averageSpend;
 
 const computeMonthlySpending = (data) => {
   const now = new Date("9-08-2024");
@@ -129,29 +123,33 @@ const computeMonthlySpending = (data) => {
     chartData.push({ x: key, y: monthlyTotals[key] || 0 });
   }
 
-  averageSpend = sum/12;
 
-  return { chartData, averageSpend };
+  return { chartData };
 };
 
 
-const computeSavingsProjection = (monthlyIncome) => {
-  const monthlySavings = monthlyIncome - averageSpend;
-  const monthlyRate = 0.07;
-  const projections = [];
 
-  for (let years = 5; years <= 40; years += 5) {
+const futureNetworthPrediction = (monthlyIncome) => {
+  let projections = [];
 
-    const futureValue = monthlySavings * Math.pow(1 + monthlyRate/ 12,  12*40);
+  for(let years = 0; years <= 50; years += 5)
+  {
+    let curSum = 0;
+
+    for(let months = 0; months <= years * 12; months++)
+    {
+      curSum = curSum * (1 + 0.07 / 12) + monthlyIncome;
+    }
 
     projections.push({
-      years,
-      futureValue: parseFloat(futureValue.toFixed(2))
+      x: years,
+      y: parseFloat(curSum.toFixed(2))
     });
   }
 
   return projections;
-};
+}
+
 
 const compareDailySpending = (data) => {
   const now = new Date("9-12-24");
@@ -205,19 +203,20 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const data = await parseCSV(req.file.path);
+    const lastTenRows = data.slice(-10);
+
     
     const insights = computeSuperCategoryCounts(data);
-    const { chartData: monthlySpending, averageSpend } = computeMonthlySpending(data);
-    console.log(averageSpend);
+    const { chartData: monthlySpending} = computeMonthlySpending(data);
     const monthlyIncome = parseFloat(req.body.monthlyIncome);
     
 
-    const savingsProjection = computeSavingsProjection(monthlyIncome, averageSpend);
+    const savingsProjection = futureNetworthPrediction(monthlyIncome);
     fs.unlink(req.file.path, () => {});
 
     const comparing = compareDailySpending(data);
 
-    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection, comparing });
+    res.json({ message: 'File parsed successfully', lastTenRows, insights, monthlySpending, savingsProjection, comparing });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });
@@ -464,26 +463,4 @@ async function monthlySpendingByCategory(csvData) {
       resolve(result);
     });
   });
-}
-
-
-const futureNetworthPrediction = (monthlyIncome) => {
-  let projections = [];
-
-  for(let years = 0; years <= 50; years += 5)
-  {
-    let curSum = 0;
-
-    for(let months = 0; months <= years * 12; months++)
-    {
-      curSum = curSum * (1 + 0.07 / 12) + monthlyIncome;
-    }
-    
-    projections.push({
-      years,
-      futureValue: parseFloat(curSum.toFixed(2))
-    });
-  }
-
-  return projections;
 }

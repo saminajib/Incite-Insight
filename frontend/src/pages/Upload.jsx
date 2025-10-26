@@ -164,6 +164,8 @@ const TransactionUploadPage = () => {
         response_ai.json()
       ]);
       
+      console.log(response_ai);
+
       sessionStorage.setItem('financialData', JSON.stringify(jsonResponse));
       sessionStorage.setItem('monthlyIncome', monthlyIncome);
       sessionStorage.setItem('transactionCount', transactionCount.toString());
