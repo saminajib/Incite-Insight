@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 import { 
   Upload, 
   DollarSign, 
@@ -21,6 +22,7 @@ const API_URL_UPLOAD = 'http://localhost:3000/upload';
 const API_URL_GEMINI = 'http://localhost:3000/Gemini';
 
 const TransactionUploadPage = () => {
+  const navigate = useNavigate();
   const [monthlyIncome, setMonthlyIncome] = useState('');
   const [csvFile, setCsvFile] = useState(null);
   const [previewData, setPreviewData] = useState(null);
@@ -166,7 +168,11 @@ const TransactionUploadPage = () => {
       sessionStorage.setItem('ai', JSON.stringify(jsonResponse_ai));
       
       setSuccess(true);
-      setIsLoading(false);
+      //setIsLoading(false);
+      setLoadingMessage('Success! Redirecting to dashboard...');
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
       
     } catch (err) {
       setError(err.message || 'Failed to process data. Please try again.');

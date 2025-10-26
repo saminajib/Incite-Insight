@@ -16,69 +16,52 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 export const description = "A pie chart with a label"
 
 const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
+  { source: "Salary", amount: 5500, fill: "var(--color-salary)" },
+  { source: "Freelance", amount: 1200, fill: "var(--color-freelance)" },
+  { source: "Investments", amount: 800, fill: "var(--color-investments)" },
+  { source: "Rental Income", amount: 1500, fill: "var(--color-rental)" },
+  { source: "Side Business", amount: 600, fill: "var(--color-sidebusiness)" },
 ]
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  amount: {
+    label: "Income",
   },
-
-  chrome: {
-    label: "Chrome",
+  salary: {
+    label: "Salary",
     color: "var(--chart-1)",
   },
-
-  safari: {
-    label: "Safari",
+  freelance: {
+    label: "Freelance Work",
     color: "var(--chart-2)",
   },
-
-  firefox: {
-    label: "Firefox",
+  investments: {
+    label: "Investments",
     color: "var(--chart-3)",
   },
-
-  edge: {
-    label: "Edge",
+  rental: {
+    label: "Rental Income",
     color: "var(--chart-4)",
   },
-
-  other: {
-    label: "Other",
+  sidebusiness: {
+    label: "Side Business",
     color: "var(--chart-5)",
   }
 }
 
 export function ChartPieLabel() {
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Label</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
-      </CardHeader>
+    <Card className="flex flex-col bg-transparent border-0">
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="[&_.recharts-pie-label-text]:fill-foreground mx-auto aspect-square max-h-[250px] pb-0">
+          className="[&_.recharts-pie-label-text]:fill-white mx-auto aspect-square max-h-[250px] pb-0">
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-            <Pie data={chartData} dataKey="visitors" label nameKey="browser" />
+            <Pie data={chartData} dataKey="amount" label nameKey="source" />
           </PieChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="text-muted-foreground leading-none">
-          Showing total visitors for the last 6 months
-        </div>
-      </CardFooter>
     </Card>
   );
 }
