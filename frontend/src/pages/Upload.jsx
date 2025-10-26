@@ -17,7 +17,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-const API_URL = 'localhost:3000/upload';
+const API_URL = 'http://localhost:3000/upload';
 
 const TransactionUploadPage = () => {
   const [monthlyIncome, setMonthlyIncome] = useState('');
@@ -132,7 +132,7 @@ const TransactionUploadPage = () => {
     
     try {
       const formData = new FormData();
-      formData.append('csv', csvFile);
+      formData.append('file', csvFile);
       formData.append('monthlyIncome', monthlyIncome);
       
       setLoadingMessage('Uploading...');

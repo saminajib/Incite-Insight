@@ -84,7 +84,7 @@ const BudgetDashboard = () => {
     }));
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("data");
+    const stored = sessionStorage.getItem("financialData");
     if (stored) {
       const allChartData = JSON.parse(stored);
 
