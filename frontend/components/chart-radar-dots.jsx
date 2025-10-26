@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 export const description = "A radar chart with dots"
 
 const defaultData = [
-  { month: "January", desktop: 186 },
+  { month: "January", desktop: 276 },
   { month: "February", desktop: 305 },
   { month: "March", desktop: 237 },
   { month: "April", desktop: 273 },
@@ -30,26 +30,27 @@ const defaultData = [
 const chartConfig = {
   desktop: {
     label: "Desktop",
-    color: "var(--chart-4)",
-  }
+    color: "var(--chart-2)",
+  } 
 }
 
 export function ChartRadarDots({data=[], dataKeyAxis="", dataKeyRadar=""}) {
 
+  console.log(data);
+
   if (!data || data.length == 0){
     data = defaultData;
-    console.log("Radar dots chart: Data empty. Using default data...\n");
+    //console.log("Radar dots chart: Data empty. Using default data...\n");
   }
 
   if(dataKeyAxis == ""){
     dataKeyAxis = "month";
-    console.log("Radar dots chart: No key inputted for PolarAngleAxis. Using default... \n");
+    //console.log("Radar dots chart: No key inputted for PolarAngleAxis. Using default... \n");
   }
-
 
   if(dataKeyRadar == ""){
     dataKeyRadar = "desktop"
-    console.log("Radar dots chart: No key inputted for Radar. Using default...\n");
+    //console.log("Radar dots chart: No key inputted for Radar. Using default...\n");
   }
 
   return (
@@ -64,7 +65,7 @@ export function ChartRadarDots({data=[], dataKeyAxis="", dataKeyRadar=""}) {
             <PolarGrid stroke="gray"/>
             <Radar
               dataKey={dataKeyRadar}
-              fill="url(#fillMobile)"
+              fill="oklch(63.7% 0.237 25.331)"
               fillOpacity={0.6}
               dot={{
                 r: 4,

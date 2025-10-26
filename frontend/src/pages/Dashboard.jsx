@@ -6,15 +6,29 @@ import { ChartRadialLabel } from '@/components/chart-radial-label';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
+  const [chart2Data, setChart2Data] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState([]);
+
+  /* Function to transform data category breakdown chart */
+  const transformInsightsData = (data) =>{
+
+    return Object.entries(data).map(([category, categoryData]) => ({
+      category: category,
+      totalAmount: categoryData.totalAmount,
+    }));
+
+  };
 
   useEffect(() => {
     const stored = sessionStorage.getItem("financialData");
     const monthlyIncome = sessionStorage.getItem("monthlyIncome");
     if (stored) {
+
       const allChartData = JSON.parse(stored);
 
       setChart1Data(allChartData.monthlySpending);
+      setChart2Data(transformInsightsData(allChartData.insights));
+
     }
     if (monthlyIncome) {
         setMonthlyIncome("$" + monthlyIncome);
@@ -110,15 +124,9 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Spending by category</p>
               </div>
-              {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
-                <div className="text-center">
-                  <PieChart className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500">Chart placeholder</p>
-                </div>
-              </div> */}
               <div className="grid-cols-12">
                 <div className="col-span-4">
-                  <ChartRadarDots></ChartRadarDots>
+                  <ChartRadarDots data={chart2Data} dataKeyAxis="category" dataKeyRadar="totalAmount"></ChartRadarDots>
                 </div>
               </div>
             </div>
@@ -128,9 +136,9 @@ const BudgetDashboard = () => {
               <div className="mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
-                  Income Sources
+                  Inciting Insight: Net Worth Over Time
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">Revenue stream breakdown</p>
+                <p className="text-slate-400 text-sm mt-1">This graph tracks the total value of your assets minus liabilities across a given time period, showing how your financial standing changes month to month. By visualizing net worth trends, you can quickly see growth patterns, financial setbacks, and the long-term impact of your saving or investment habits.</p>
               </div>
               {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
                 <div className="text-center">
@@ -138,7 +146,7 @@ const BudgetDashboard = () => {
                   <p className="text-slate-500">Chart placeholder</p>
                 </div>
               </div> */}
-              <ChartRadialLabel></ChartRadialLabel>
+              {/* <ChartRadialLabel></ChartRadialLabel> */}
             </div>
 
             {/* Net Worth Over Time - Wide */}
