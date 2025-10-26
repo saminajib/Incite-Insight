@@ -15,6 +15,7 @@ const BudgetDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [averageMonthlyExpenses, setAverageMonthlyExpenses] = useState(0);
   const [balance, setBalance] = useState(0);
+  const [retirementAge, setRetirementAge] = useState();
     /* Function to transform data category breakdown chart */
   const transformInsightsData = (data) =>{
 
@@ -39,6 +40,11 @@ const BudgetDashboard = () => {
       setTransactions(allChartData.lastTenRows);
       setAverageMonthlyExpenses(allChartData.monthlyExpenses || 0);
       setBalance(monthlyIncome - averageMonthlyExpenses);
+
+      if(stored.retirement)
+      {
+
+      }
     }
     if (monthlyIncome) {
         setMonthlyIncome(monthlyIncome);
@@ -221,14 +227,14 @@ const BudgetDashboard = () => {
             <div>
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
-                Percentage of way to retirement
+                Progress to retirement
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Track your progress to retirement</p>
             </div>
             </div>
             <div className='grid-cols-8'>
             <div className='col-span-8'>
-                <ChartAreaInteractive data={chart3Data} strokeColor="pink" fillColor="url(#fillPink)" />
+                <ChartAreaInteractive data={chart3Data} strokeColor="pink" fillColor="url(#fillPink)" threshold={1000000} />
             </div>
             </div>
         </div>
