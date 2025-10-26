@@ -11,12 +11,27 @@ import path from "path";
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+console.log(GEMINI_API_KEY);
 
 
 const app = express();
 const port = 3000;
 const upload = multer({dest:'uploads/'});
 
+/* Manual CORS middleware */
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : new GoogleGenAI({});
 
@@ -85,42 +100,104 @@ const computeSuperCategoryCounts = (data) => {
   return result;
 };
 
+var averageSpend;
+
 const computeMonthlySpending = (data) => {
-  const monthlyTotals = computeMonthlySpending(data);
-  const superCategoryStats = computeSuperCategories(data, categoryMap);
+  const now = new Date("9-08-2024");
+  const monthlyTotals = {};
 
-  // Limit to the past 12 months
-  const chartData = make12MonthChartData(monthlyTotals);
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
 
-  return {
-    monthlySpending: {
-      monthlyTotals: chartData.reduce((acc, { month, total }) => {
-        acc[month] = total;
-        return acc;
-      }, {}),
-      chartData
-    },
-    superCategories: superCategoryStats
-  };
-}
-
-function make12MonthChartData(monthlyTotals) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const chartData = [];
-
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(currentYear, currentMonth - i, 1);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if (monthlyTotals[key]) {
-      chartData.unshift({ month: key, total: monthlyTotals[key] });
-    }
+    const amount = parseFloat(row.amount);
+    if (isNaN(amount)) return;
+
+    monthlyTotals[key] = (monthlyTotals[key] || 0) + amount;
+  });
+
+
+  let sum = 0;
+
+  const chartData = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    sum += monthlyTotals[key] || 0;
+    chartData.push({ x: key, y: monthlyTotals[key] || 0 });
   }
 
-  return chartData;
-}
+  averageSpend = sum/12;
 
+  return { chartData, averageSpend };
+};
+
+
+const computeSavingsProjection = (monthlyIncome) => {
+  const monthlySavings = monthlyIncome - averageSpend;
+  const monthlyRate = 0.07;
+  const projections = [];
+
+  for (let years = 5; years <= 40; years += 5) {
+
+    const futureValue = monthlySavings * Math.pow(1 + monthlyRate/ 12,  12*40);
+
+    projections.push({
+      years,
+      futureValue: parseFloat(futureValue.toFixed(2))
+    });
+  }
+
+  return projections;
+};
+
+const compareDailySpending = (data) => {
+  const now = new Date("9-12-24");
+
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); 
+  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const prevYear = prevMonthDate.getFullYear();
+  const prevMonth = prevMonthDate.getMonth();
+
+  
+  const currentMonthTotals = {};
+  const previousMonthTotals = {};
+
+  data.forEach((row) => {
+    if (!row.date || !row.amount) return;
+    const date = new Date(row.date);
+    if (isNaN(date)) return;
+
+    const day = date.getDate();
+    const amount = parseFloat(row.amount) || 0;
+
+    if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+      currentMonthTotals[day] = (currentMonthTotals[day] || 0) + amount;
+    } else if (date.getFullYear() === prevYear && date.getMonth() === prevMonth) {
+      previousMonthTotals[day] = (previousMonthTotals[day] || 0) + amount;
+    }
+  });
+
+
+  const comparisons = [];
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const current = currentMonthTotals[day] || 0;
+    const previous = previousMonthTotals[day] || 0;
+
+    comparisons.push({
+      day,
+      currentMonth: parseFloat(current.toFixed(2)),
+      previousMonth: parseFloat(previous.toFixed(2)),
+    });
+  }
+
+  return comparisons;
+};
 
 
 app.post("/upload", upload.single('file'), async (req, res) => {
@@ -130,11 +207,17 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const data = await parseCSV(req.file.path);
     
     const insights = computeSuperCategoryCounts(data);
-    const monthlySpending = computeMonthlySpending(data);
+    const { chartData: monthlySpending, averageSpend } = computeMonthlySpending(data);
+    console.log(averageSpend);
+    const monthlyIncome = parseFloat(req.body.monthlyIncome);
+    
 
+    const savingsProjection = computeSavingsProjection(monthlyIncome, averageSpend);
     fs.unlink(req.file.path, () => {});
 
-    res.json({ message: 'File parsed successfully', data, insights, monthlySpending });
+    const comparing = compareDailySpending(data);
+
+    res.json({ message: 'File parsed successfully', insights, monthlySpending, savingsProjection, comparing });
   } catch (err) {
     console.error('Error processing file:', err);
     res.status(500).json({ error: 'Failed to process CSV' });

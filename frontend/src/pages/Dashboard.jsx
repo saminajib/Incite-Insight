@@ -1,8 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar } from 'lucide-react';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
+import { ChartRadarDots } from '@/components/chart-radar-dots';
+import { ChartRadialLabel } from '@/components/chart-radial-label';
 
 const BudgetDashboard = () => {
+  const [chart1Data, setChart1Data] = useState([]);
+  const [monthlyIncome, setMonthlyIncome] = useState([]);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("financialData");
+    const monthlyIncome = sessionStorage.getItem("monthlyIncome");
+    if (stored) {
+      const allChartData = JSON.parse(stored);
+
+      setChart1Data(allChartData.monthlySpending);
+    }
+    if (monthlyIncome) {
+        setMonthlyIncome("$" + monthlyIncome);
+    }
+  }, []);
+
+  useEffect(() => {
+
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -38,7 +59,7 @@ const BudgetDashboard = () => {
           <div className="grid grid-cols-4 gap-5">
             {[
               { label: 'Total Balance', value: '$0.00', icon: DollarSign, color: 'from-cyan-500 to-blue-500', glow: 'cyan' },
-              { label: 'Monthly Income', value: '$0.00', icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
+              { label: 'Monthly Income', value: monthlyIncome, icon: TrendingUp, color: 'from-emerald-500 to-teal-500', glow: 'emerald' },
               { label: 'Monthly Expenses', value: '$0.00', icon: TrendingDown, color: 'from-pink-500 to-rose-500', glow: 'rose' },
               { label: 'Savings Rate', value: '0%', icon: PiggyBank, color: 'from-purple-500 to-indigo-500', glow: 'purple' }
             ].map((metric, idx) => (
@@ -75,7 +96,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive />
+                    <ChartAreaInteractive data={chart1Data} />
                 </div>
               </div>
             </div>
@@ -89,10 +110,15 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Spending by category</p>
               </div>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
+              {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
                 <div className="text-center">
                   <PieChart className="w-12 h-12 text-slate-600 mx-auto mb-2" />
                   <p className="text-slate-500">Chart placeholder</p>
+                </div>
+              </div> */}
+              <div className="grid-cols-12">
+                <div className="col-span-4">
+                  <ChartRadarDots></ChartRadarDots>
                 </div>
               </div>
             </div>
@@ -106,12 +132,13 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Revenue stream breakdown</p>
               </div>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
+              {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
                 <div className="text-center">
                   <DollarSign className="w-12 h-12 text-slate-600 mx-auto mb-2" />
                   <p className="text-slate-500">Chart placeholder</p>
                 </div>
-              </div>
+              </div> */}
+              <ChartRadialLabel></ChartRadialLabel>
             </div>
 
             {/* Net Worth Over Time - Wide */}
@@ -127,7 +154,7 @@ const BudgetDashboard = () => {
               </div>
               <div className='grid-cols-8'>
                 <div className='col-span-8'>
-                    <ChartAreaInteractive />
+                    <ChartAreaInteractive data={chart1Data} strokeColor="var(--color-mobile)" fillColor="url(#fillMobile)" />
                 </div>
               </div>
             </div>
@@ -176,53 +203,21 @@ const BudgetDashboard = () => {
         </div>
 
         {/* Financial Predictions Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-6">Predicted Financial Outlook</h2>
-          <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-8">
-            <div className="grid grid-cols-3 gap-6">
-              {['Next Month', '3 Months', '6 Months'].map((period, idx) => (
-                <div key={idx} className="relative">
-                  <div className="backdrop-blur-sm bg-slate-700/30 border border-slate-600/30 rounded-xl p-6 hover:border-cyan-500/40 transition-all">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-slate-400 font-medium">{period}</span>
-                      <div className="flex items-center gap-1 text-emerald-400">
-                        <ArrowUpRight className="w-4 h-4" />
-                        <span className="text-sm font-semibold">0%</span>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-2xl font-bold text-white mb-1">$0.00</p>
-                      <p className="text-slate-500 text-sm">Projected Balance</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Income</span>
-                        <span className="text-emerald-400 font-semibold">$0.00</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Expenses</span>
-                        <span className="text-rose-400 font-semibold">$0.00</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Savings</span>
-                        <span className="text-cyan-400 font-semibold">$0.00</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full" style={{width: '0%'}}></div>
-                    </div>
-                  </div>
-                  {idx < 2 && (
-                    <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                      <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-cyan-500 flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+        <div className="col-span-8 backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-cyan-500/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+            <div>
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-cyan-400" />
+                Possible Net Worth Over Time
+                </h3>
+                <p className="text-slate-400 text-sm mt-1">Track your wealth accumulation</p>
             </div>
-          </div>
+            </div>
+            <div className='grid-cols-8'>
+            <div className='col-span-8'>
+                <ChartAreaInteractive data={chart1Data} strokeColor="pink" fillColor="url(#fillPink)" />
+            </div>
+            </div>
         </div>
 
         {/* Transaction History Section */}
