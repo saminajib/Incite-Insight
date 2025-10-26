@@ -141,8 +141,8 @@ const futureNetworthPrediction = (monthlyIncome) => {
     }
 
     projections.push({
-      years,
-      futureValue: parseFloat(curSum.toFixed(2))
+      x: years,
+      y: parseFloat(curSum.toFixed(2))
     });
   }
 
