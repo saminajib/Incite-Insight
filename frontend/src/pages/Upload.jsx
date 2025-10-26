@@ -140,15 +140,16 @@ const TransactionUploadPage = () => {
       
       setLoadingMessage('Uploading...');
       
-      const response = await fetch(API_URL_UPLOAD, {
-        method: 'POST',
-        body: formData
-      });
-
-      const response_ai = await fetch(API_URL_GEMINI, {
-        method: 'POST',
-        body: formData
-      })
+      const [response, response_ai] = await Promise.all([
+        fetch(API_URL_UPLOAD, {
+          method: 'POST',
+          body: formData
+        }),
+        fetch(API_URL_GEMINI, {
+          method: 'POST',
+          body: formData
+        })
+      ]);
       
       setLoadingMessage('Processing transactions...');
       
@@ -158,8 +159,10 @@ const TransactionUploadPage = () => {
       
       setLoadingMessage('Generating insights...');
       
-      const jsonResponse = await response.json();
-      const jsonResponse_ai = await response_ai.json();
+      const [jsonResponse, jsonResponse_ai] = await Promise.all([
+        response.json(),
+        response_ai.json()
+      ]);
       
       sessionStorage.setItem('financialData', JSON.stringify(jsonResponse));
       sessionStorage.setItem('monthlyIncome', monthlyIncome);
