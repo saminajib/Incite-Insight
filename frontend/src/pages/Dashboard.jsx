@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar } from 'lucide-react';
+import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar, ChartPie } from 'lucide-react';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { ChartRadarDots } from '@/components/chart-radar-dots';
-import { ChartRadialLabel } from '@/components/chart-radial-label';
+import { ChartPieLabel } from '@/components/chart-pie-label';
 
 const BudgetDashboard = () => {
   const [chart1Data, setChart1Data] = useState([]);
@@ -136,9 +136,9 @@ const BudgetDashboard = () => {
               <div className="mb-4">
                 <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
-                  Inciting Insight: Net Worth Over Time
+                  Income Sources
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">This graph tracks the total value of your assets minus liabilities across a given time period, showing how your financial standing changes month to month. By visualizing net worth trends, you can quickly see growth patterns, financial setbacks, and the long-term impact of your saving or investment habits.</p>
+                <p className="text-slate-400 text-sm mt-1"></p>
               </div>
               {/* <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl">
                 <div className="text-center">
@@ -146,7 +146,7 @@ const BudgetDashboard = () => {
                   <p className="text-slate-500">Chart placeholder</p>
                 </div>
               </div> */}
-              {/* <ChartRadialLabel></ChartRadialLabel> */}
+              <ChartPieLabel data={chart2Data} dataKeyAxis="totalAmount" dataKeyRadar="category"></ChartPieLabel>
             </div>
 
             {/* Net Worth Over Time - Wide */}
