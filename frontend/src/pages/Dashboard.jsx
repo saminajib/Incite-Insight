@@ -1,12 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, User, TrendingUp, TrendingDown, DollarSign, PiggyBank, Lightbulb, Target, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, BarChart3, PieChart, LineChart, Calendar } from 'lucide-react';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { ChartRadarDots } from '@/components/chart-radar-dots';
 
 const BudgetDashboard = () => {
-  const [chart1Data, setChart1Data] = useState([{date:"oct", mobile:55},{date:"oct", mobile:55}]);
+  const [chart1Data, setChart1Data] = useState([]);
 
+    sessionStorage.setItem("data", JSON.stringify({
+    "message": "File parsed successfully",
+    "insights": {
+        "Essentials": {
+            "count": 2555,
+            "totalAmount": 40795.82999999985
+        },
+        "Transport": {
+            "count": 403,
+            "totalAmount": 1706.7799999999988
+        },
+        "Other": {
+            "count": 91,
+            "totalAmount": 1570.0499999999997
+        },
+        "Business & Learning": {
+            "count": 477,
+            "totalAmount": 9079.400000000001
+        },
+        "Entertainment": {
+            "count": 82,
+            "totalAmount": 8653.85
+        }
+    },
+    "monthlySpending": [
+        {
+            "month": "2023-10",
+            "total": 1728.259999999999
+        },
+        {
+            "month": "2023-11",
+            "total": 1430.01
+        },
+        {
+            "month": "2023-12",
+            "total": 1808.7400000000002
+        },
+        {
+            "month": "2024-01",
+            "total": 4072.23
+        },
+        {
+            "month": "2024-02",
+            "total": 1247.3599999999997
+        },
+        {
+            "month": "2024-03",
+            "total": 1559.18
+        },
+        {
+            "month": "2024-04",
+            "total": 1706.3
+        },
+        {
+            "month": "2024-05",
+            "total": 4021.4599999999996
+        },
+        {
+            "month": "2024-06",
+            "total": 2644.02
+        },
+        {
+            "month": "2024-07",
+            "total": 5531.889999999999
+        },
+        {
+            "month": "2024-08",
+            "total": 2282.1400000000003
+        },
+        {
+            "month": "2024-09",
+            "total": 2958.2699999999995
+        }
+    ]
+    }));
 
+  useEffect(() => {
+    const stored = sessionStorage.getItem("data");
+    if (stored) {
+      const allChartData = JSON.parse(stored);
+
+      setChart1Data(allChartData.monthlySpending);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">

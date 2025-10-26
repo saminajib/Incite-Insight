@@ -74,7 +74,7 @@ const ChartAreaInteractive = ({ data, strokeColor = 'Purple', fillColor = 'url(#
             </defs>
             <CartesianGrid vertical={false} strokeWidth={0.5} />
             <XAxis
-              dataKey="date"
+              dataKey="month"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -99,7 +99,7 @@ const ChartAreaInteractive = ({ data, strokeColor = 'Purple', fillColor = 'url(#
                   indicator="dot" />
               } />
             <Area
-              dataKey="mobile"
+              dataKey="total"
               type="natural"
               fill={fillColor}
               stroke={strokeColor}
