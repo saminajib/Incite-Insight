@@ -131,7 +131,7 @@ const BudgetDashboard = () => {
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">Spending by category</p>
               </div>
-              <div className="grid-cols-12">
+              <div className="grid-cols-4">
                 <div className="col-span-4">
                   <ChartRadarDots data={chart2Data} dataKeyAxis="category" dataKeyRadar="totalAmount"></ChartRadarDots>
                 </div>
@@ -235,7 +235,7 @@ const BudgetDashboard = () => {
 
         {/* Transaction History Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-6">Recent Transactions</h2>
+          <h2 className="text-3xl font-bold text-white mb-6 pt-8">Recent Transactions</h2>
           <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex gap-2">

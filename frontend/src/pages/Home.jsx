@@ -42,16 +42,10 @@ const Home = () => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-600 to-blue-600 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-blue-600 bg-clip-text text-transparent pb-2">
               Incite Insight
             </span>
           </div>
-            
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-slate-300 hover:text-white transition-colors">Features</a>
-              <a href="#about" className="text-slate-300 hover:text-white transition-colors">About</a>
-            </div>
-
             <div className="flex items-center gap-3">
               <Button className="bg-gradient-to-br from-pink-600 to-blue-600 hover:from-blue-700 hover:to-cyan-700 text-white">
                 Get Started
@@ -289,7 +283,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-5 gap-8 mb-8">
             <div className="md:col-span-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-600 to-blue-600 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-white" />
             </div>
